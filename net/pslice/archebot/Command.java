@@ -1,6 +1,8 @@
 package net.pslice.archebot;
 
-public abstract class Command<B extends ArcheBot> {
+import net.pslice.utilities.managers.StringManager;
+
+public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
 
     /*
      * =======================================
@@ -9,9 +11,11 @@ public abstract class Command<B extends ArcheBot> {
      */
 
     // Information about the command
-    protected final String ID,
+    protected final String name,
                            parameters,
                            description;
+    // Alternate IDs the command can be run with
+    protected final String[] IDs;
 
     // The permission required to run the command
     protected final User.Permission permission;
@@ -25,24 +29,25 @@ public abstract class Command<B extends ArcheBot> {
      * =======================================
      */
 
-    public Command(String ID)
+    public Command(String name)
     {
-        this(ID, User.Permission.DEFAULT);
+        this(name, User.Permission.DEFAULT);
     }
 
-    public Command(String ID, User.Permission permission)
+    public Command(String name, User.Permission permission)
     {
-        this(ID, permission, "[No parameters specified]", "[No description specified]");
+        this(name, permission, "[No parameters specified]", "[No description specified]");
     }
 
-    public Command(String ID, String parameters, String description)
+    public Command(String name, String parameters, String description, String... IDs)
     {
-        this(ID, User.Permission.DEFAULT, parameters, description);
+        this(name, User.Permission.DEFAULT, parameters, description, IDs);
     }
 
-    public Command(String ID, User.Permission permission, String parameters, String description)
+    public Command(String name, User.Permission permission, String parameters, String description, String... IDs)
     {
-        this.ID = ID.toLowerCase();
+        this.name = name;
+        this.IDs = IDs;
         this.permission = permission;
         this.parameters = parameters;
         this.description = description;
@@ -56,9 +61,14 @@ public abstract class Command<B extends ArcheBot> {
 
     public abstract void execute(B bot, Channel channel, User sender, String[] args);
 
-    public String getID()
+    public String getName()
     {
-        return ID;
+        return name;
+    }
+
+    public String[] getIDs()
+    {
+        return IDs;
     }
 
     public String getParameters()
@@ -95,11 +105,19 @@ public abstract class Command<B extends ArcheBot> {
     @Override
     public String toString()
     {
-        return String.format("%s {Permission: %s} {Parameters: %s} {Description: %s} {Enabled: %b}",
-                ID,
+        return String.format("%s {Permission: %s} {Parameters: %s} {Description: %s} {Enabled: %b} {IDs: %s}",
+                name,
                 permission,
                 parameters,
                 description,
-                enabled);
+                enabled,
+                StringManager.compressArray(IDs, 0, ", ", false));
+    }
+
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public int compareTo(Command<B> command)
+    {
+        return name.compareTo(command.name);
     }
 }

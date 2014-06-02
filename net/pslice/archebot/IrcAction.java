@@ -45,6 +45,6 @@ public class IrcAction {
     @Override
     public final boolean equals(Object obj)
     {
-        return obj instanceof IrcAction && ((IrcAction) obj).text.equals(this.text);
+        return obj instanceof IrcAction && obj.toString().equals(text);
     }
 }

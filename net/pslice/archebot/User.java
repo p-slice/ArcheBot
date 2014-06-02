@@ -19,6 +19,7 @@ public final class User {
                    realname = "",
                    server   = "";
 
+    // Set of user's permissions
     private final Set<Permission> permissions = new HashSet<>();
 
     /*
@@ -30,6 +31,7 @@ public final class User {
     User(String nick)
     {
         this.nick = nick;
+        permissions.add(Permission.DEFAULT);
     }
 
     /*
@@ -219,9 +221,10 @@ public final class User {
     }
 
     public static enum Mode {
+
         /*
          * =======================================
-         *
+         * Enum values:
          * =======================================
          */
 
@@ -235,7 +238,7 @@ public final class User {
 
         /*
          * =======================================
-         *
+         * Objects and variables:
          * =======================================
          */
 
@@ -243,7 +246,7 @@ public final class User {
 
         /*
          * =======================================
-         *
+         * Constructors:
          * =======================================
          */
 
@@ -254,7 +257,7 @@ public final class User {
 
         /*
          * =======================================
-         *
+         * Static methods:
          * =======================================
          */
 
@@ -268,10 +271,11 @@ public final class User {
 
         /*
          * =======================================
-         *
+         * Overridden methods:
          * =======================================
          */
 
+        @Override
         public String toString()
         {
             return "" + ID;

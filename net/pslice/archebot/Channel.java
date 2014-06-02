@@ -42,6 +42,21 @@ public final class Channel {
      * =======================================
      */
 
+    public boolean contains(User user)
+    {
+        return users.containsKey(user);
+    }
+
+    public Set<Channel.Mode> getModes()
+    {
+        return new HashSet<>(modes);
+    }
+
+    public Set<User.Mode> getModes(User user)
+    {
+        return users.get(user);
+    }
+
     public String getName()
     {
         return name;
@@ -55,16 +70,6 @@ public final class Channel {
     public String getTopicSetter()
     {
         return topicSetter;
-    }
-
-    public Set<Channel.Mode> getModes()
-    {
-        return new HashSet<>(modes);
-    }
-
-    public Set<User.Mode> getModes(User user)
-    {
-        return users.get(user);
     }
 
     public Set<User> getUsers()
@@ -81,11 +86,6 @@ public final class Channel {
                 modeUsers.add(user);
 
         return modeUsers;
-    }
-
-    public boolean contains(User user)
-    {
-        return users.containsKey(user);
     }
 
     public boolean hasMode(Channel.Mode mode)

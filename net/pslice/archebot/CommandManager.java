@@ -1,7 +1,6 @@
 package net.pslice.archebot;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,13 +31,15 @@ public final class CommandManager {
 
     public void registerCommand(Command command)
     {
-        commands.put(command.getID(), command);
+        commands.put(command.getName(), command);
+        for (String ID : command.getIDs())
+            commands.put(ID, command);
     }
 
     public void registerCommands(Command... commands)
     {
         for (Command command : commands)
-            this.commands.put(command.getID(), command);
+            this.registerCommand(command);
     }
 
     public Command getCommand(String ID)
@@ -63,6 +64,6 @@ public final class CommandManager {
 
     public Set<Command> getCommands()
     {
-        return new HashSet<>(commands.values());
+        return new TreeSet<>(commands.values());
     }
 }

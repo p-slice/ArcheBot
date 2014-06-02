@@ -3,11 +3,11 @@ package net.pslice.archebot;
 import net.pslice.archebot.actions.ErrorAction;
 import net.pslice.archebot.actions.RawAction;
 import net.pslice.archebot.listeners.*;
+import net.pslice.utilities.Queue;
 import net.pslice.utilities.managers.StringManager;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.*;
 
 @SuppressWarnings("unchecked")
 final class Connection {
@@ -25,7 +25,7 @@ final class Connection {
     private final Socket socket;
 
     // The thread handling all output
-    private final OutputThread outputThread;
+    private final OutputThread output;
 
     // The status of the connection
     private boolean active = false;
@@ -45,7 +45,7 @@ final class Connection {
                realname   = bot.getProperty(ArcheBot.Property.realname).replace("{VERSION}", ArcheBot.VERSION).replace("{UVERSION}", ArcheBot.USER_VERSION),
                server     = bot.getProperty(ArcheBot.Property.server),
                serverPass = bot.getProperty(ArcheBot.Property.serverPass);
-        int port          = Integer.parseInt(bot.getProperty(ArcheBot.Property.port));
+        int    port       = Integer.parseInt(bot.getProperty(ArcheBot.Property.port));
 
         bot.setNick(nick);
         bot.log(2, "Attempting to connect to " + server + " on port " + port + "...");
@@ -57,13 +57,13 @@ final class Connection {
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        InputThread inputThread = new InputThread(this, reader);
-        outputThread = new OutputThread(this, writer);
+        InputThread input = new InputThread(this, reader);
+        output = new OutputThread(this, writer);
 
         if (!serverPass.equals(""))
-            outputThread.sendLine("PASS " + serverPass);
-        outputThread.sendLine("NICK " + nick);
-        outputThread.sendLine("USER " + login + " 8 * :" + realname);
+            output.sendLine("PASS " + serverPass);
+        output.sendLine("NICK " + nick);
+        output.sendLine("USER " + login + " 8 * :" + realname);
 
         String message;
         int tries = 1;
@@ -82,7 +82,7 @@ final class Connection {
                 {
                     bot.log(3, "Nick already in use (Trying another one!)");
                     bot.setNick(nick + tries);
-                    outputThread.sendLine("NICK " + bot.getNick());
+                    output.sendLine("NICK " + bot.getNick());
                     tries++;
                 }
 
@@ -97,8 +97,8 @@ final class Connection {
 
         socket.setSoTimeout(4 * 60000);
 
-        inputThread.start();
-        outputThread.start();
+        input.start();
+        output.start();
     }
 
     /*
@@ -106,11 +106,6 @@ final class Connection {
      * Local methods:
      * =======================================
      */
-
-    ArcheBot getBot()
-    {
-        return bot;
-    }
 
     boolean isActive()
     {
@@ -120,22 +115,22 @@ final class Connection {
     void send(String line, boolean direct)
     {
         if (direct)
-            outputThread.sendLine(line);
+            output.sendLine(line);
         else
-            outputThread.addMessageToQueue(line);
+            output.addMessageToQueue(line);
     }
 
     void handleServerLine(String line)
     {
         bot.log(0, line);
         if (line.startsWith("PING"))
-            outputThread.sendLine("PONG " + line.substring(5));
+            output.sendLine("PONG " + line.substring(5));
         else
         {
             String[] lineSplit = line.split(" ");
 
             User source = bot.getUser(lineSplit[0].substring(1).split("!")[0]);
-            if (lineSplit[0].contains("!") && !bot.isUser(source.getNick()))
+            if (lineSplit[0].contains("!") && bot.isUser(source.getNick()))
                 bot.addUser(source);
 
             switch (lineSplit[1])
@@ -230,38 +225,61 @@ final class Connection {
 
     private void PRIVMSG(User source, String[] lineSplit)
     {
-        if (lineSplit[2].equals(bot.getNick()))
+        String message = StringManager.compressArray(lineSplit, 3, true);
+
+        if (message.startsWith("\u0001") && message.endsWith("\u0001"))
         {
-            for (Listener listener : bot.getListeners())
-                if (listener instanceof MessageListener)
-                    ((MessageListener) listener).onPrivateMessage(bot, source, StringManager.compressArray(lineSplit, 3, true));
+            if (lineSplit[3].substring(2).equals("ACTION"))
+            {
+                message = message.substring(8, message.length() - 1);
+                if (lineSplit[2].equals(bot.getNick()))
+                    for (Listener listener : bot.getListeners())
+                    {
+                        if (listener instanceof ActionListener)
+                            ((ActionListener) listener).onPrivateAction(bot, source, message);
+                    }
+                else
+                    for (Listener listener : bot.getListeners())
+                    {
+                        if (listener instanceof ActionListener)
+                            ((ActionListener) listener).onAction(bot, bot.getChannel(lineSplit[2]), source, message);
+                    }
+            }
+        }
+
+        else if (message.startsWith(bot.getProperty(ArcheBot.Property.prefix)))
+        {
+            String ID = lineSplit[3].substring(bot.getProperty(ArcheBot.Property.prefix).length() + 1).toLowerCase();
+            if (bot.getCommandManager().isRegistered(ID))
+            {
+                String[] args = new String[lineSplit.length - 4];
+                System.arraycopy(lineSplit, 4, args, 0, args.length);
+
+                Channel channel = bot.getChannel(lineSplit[2].equals(bot.getNick()) ? source.getNick() : lineSplit[2]);
+
+                for (Listener listener : bot.getListeners())
+                    if (listener instanceof CommandListener)
+                        ((CommandListener) listener).onCommand(bot, channel, source, bot.getCommandManager().getCommand(ID), args);
+            }
+
+            else
+                bot.send(ErrorAction.build(source, String.format("The command ID '%s' is not registered!", ID)));
         }
 
         else
         {
-            Channel channel = bot.getChannel(lineSplit[2]);
-            if (lineSplit[3].substring(1).startsWith(bot.getProperty(ArcheBot.Property.prefix)))
-            {
-                String command = lineSplit[3].substring(bot.getProperty(ArcheBot.Property.prefix).length() + 1).toLowerCase();
-                if (bot.getCommandManager().isRegistered(command))
-                {
-                    String[] args = new String[lineSplit.length - 4];
-                    System.arraycopy(lineSplit, 4, args, 0, args.length);
-                    for (Listener listener : bot.getListeners())
-                        if (listener instanceof CommandListener)
-                            ((CommandListener) listener).onCommand(bot, channel, source, bot.getCommandManager().getCommand(command), args);
-                }
-
-                else
-                    bot.send(ErrorAction.build(source, String.format("The command '%s' is not registered!", command)));
-            }
-
-            else
-            {
+            if (lineSplit[2].equals(bot.getNick()))
                 for (Listener listener : bot.getListeners())
+                {
                     if (listener instanceof MessageListener)
-                        ((MessageListener) listener).onMessage(bot, bot.getChannel(lineSplit[2]), source, StringManager.compressArray(lineSplit, 3, true));
-            }
+                        ((MessageListener) listener).onPrivateMessage(bot, source, message);
+                }
+            else
+                for (Listener listener : bot.getListeners())
+                {
+                    if (listener instanceof MessageListener)
+                        ((MessageListener) listener).onMessage(bot, bot.getChannel(lineSplit[2]), source, message);
+                }
         }
     }
 
@@ -330,7 +348,7 @@ final class Connection {
     private void NICK(User source, String[] lineSplit)
     {
         String oldNick = source.getNick();
-        String newNick = lineSplit[2];
+        String newNick = lineSplit[2].substring(1);
 
         source.setNick(newNick);
         bot.removeUser(oldNick);
@@ -413,7 +431,7 @@ final class Connection {
     private void E352(String[] lineSplit)
     {
         User user = bot.getUser(lineSplit[7]);
-        if (!bot.isUser(lineSplit[7]))
+        if (bot.isUser(lineSplit[7]))
             bot.addUser(user);
 
         user.setLogin(lineSplit[4]);
@@ -473,6 +491,7 @@ final class Connection {
      */
 
     private static final class InputThread extends Thread {
+
         /*
          * =======================================
          * Objects and variables:
@@ -518,24 +537,25 @@ final class Connection {
 
                     catch (Exception e)
                     {
-                        connection.getBot().log(3, "An exception caused by your code has occurred (" + e.toString() + ")");
-                        connection.getBot().log(2, "The bot should continue functioning without problems; however, you may want to try fix the issue.");
+                        connection.bot.log(3, "An exception caused by your code has occurred (" + e.toString() + ")");
+                        connection.bot.log(2, "The bot should continue functioning without problems; however, you may want to try fix the issue.");
                         e.printStackTrace();
                     }
                 }
                 if (connection.isActive())
-                    connection.getBot().disconnect("Connection closed", StringManager.toBoolean(connection.getBot().getProperty(ArcheBot.Property.reconnect)));
+                    connection.bot.disconnect("Connection closed", StringManager.toBoolean(connection.bot.getProperty(ArcheBot.Property.reconnect)));
             }
 
             catch (IOException e)
             {
-                connection.getBot().log(3, String.format(ArcheBot.exception_message, e));
-                connection.getBot().disconnect("A fatal exception occurred!", StringManager.toBoolean(connection.getBot().getProperty(ArcheBot.Property.reconnect)));
+                connection.bot.log(3, String.format(ArcheBot.exception_message, e));
+                connection.bot.disconnect("A fatal exception occurred!", StringManager.toBoolean(connection.bot.getProperty(ArcheBot.Property.reconnect)));
             }
         }
     }
 
     private static final class OutputThread extends Thread {
+
         /*
          * =======================================
          * Objects and variables:
@@ -549,7 +569,7 @@ final class Connection {
         private final BufferedWriter writer;
 
         // The queue of output lines
-        private final List<String> queue = new LinkedList<>();
+        Queue<String> queue = new Queue<>();
 
         /*
          * =======================================
@@ -580,19 +600,19 @@ final class Connection {
                 {
                     writer.write(line + "\n\r");
                     writer.flush();
-                    connection.getBot().log(1, line);
+                    connection.bot.log(1, line);
                 }
 
                 catch (Exception e)
                 {
-                    connection.getBot().log(3, String.format(ArcheBot.exception_message, e));
+                    connection.bot.log(3, String.format(ArcheBot.exception_message, e));
                 }
             }
         }
 
         synchronized void addMessageToQueue(String message)
         {
-            queue.add(message);
+            queue.addItem(message);
         }
 
         /*
@@ -608,7 +628,7 @@ final class Connection {
             {
                 if (queue.size() > 100)
                 {
-                    connection.getBot().log(2, "Too much output backlogged. Clearing all messages.");
+                    connection.bot.log(2, "Too much output backlogged. Clearing all messages.");
                     queue.clear();
                 }
 
@@ -616,16 +636,13 @@ final class Connection {
                 {
                     Thread.sleep(1000);
 
-                    if (queue.size() > 0)
-                    {
-                        sendLine(queue.get(0));
-                        queue.remove(0);
-                    }
+                    if (queue.hasNext())
+                        sendLine(queue.getNext());
                 }
 
                 catch (Exception e)
                 {
-                    connection.getBot().log(3, String.format(ArcheBot.exception_message, e));
+                    connection.bot.log(3, String.format(ArcheBot.exception_message, e));
                 }
             }
         }

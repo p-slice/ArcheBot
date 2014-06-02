@@ -5,6 +5,7 @@ import net.pslice.archebot.actions.NickservAction;
 import net.pslice.archebot.listeners.ConnectionListener;
 import net.pslice.utilities.managers.FileManager;
 import net.pslice.utilities.managers.StringManager;
+import net.pslice.utilities.pml.PMLFile;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -19,7 +20,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "1.1";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -36,10 +37,7 @@ public class ArcheBot {
     };
 
     // The format of the date in the bot's output log
-    static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['hh:mm:ss'] '");
-
-    // The FileManager used by the bot for loading and saving properties
-    private final FileManager fileManager;
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['hh:mm:ss'] '");
 
     // The CommandManager used by the bot to keep track of commands
     private final CommandManager commandManager = new CommandManager();
@@ -53,13 +51,13 @@ public class ArcheBot {
     // All currently known users
     private final HashMap<String, User> users = new HashMap<>();
 
-    // All loaded user permissions
-    private final HashMap<String, Set<String>> userPermissions;
+    // The FileManager used for loading/saving files
+    private final FileManager fileManager;
 
-    // The properties used by the bot on connection
-    private Properties properties;
+    // The PML file containing all bot data
+    private PMLFile properties;
 
-    // The current connection the bot is using (null if none are active)
+    // The current connection the bot is using
     private Connection connection;
 
     // The name the bot is known by on the server
@@ -78,27 +76,10 @@ public class ArcheBot {
 
     public ArcheBot(String directory)
     {
-        this.fileManager = new FileManager(directory);
+        fileManager = new FileManager(directory);
         this.reload();
 
-        if (!fileManager.fileExists("permissions"))
-            fileManager.saveObject("permissions", new HashMap<>());
-        userPermissions = fileManager.loadObject("permissions");
-
-        for (String user : userPermissions.keySet())
-            if (userPermissions.get(user).contains(User.Permission.OPERATOR.toString()))
-                userPermissions.remove(User.Permission.OPERATOR.toString());
-
-        for (String user : StringManager.breakList(this.getProperty(Property.operators)))
-        {
-            if (!userPermissions.containsKey(user))
-                userPermissions.put(user, new HashSet<String>());
-            if (!userPermissions.get(user).contains(User.Permission.OPERATOR.toString()))
-                userPermissions.get(user).add(User.Permission.OPERATOR.toString());
-        }
-
         this.log(2, "ArcheBot (Version " + VERSION + ") loaded and ready for use!");
-        this.log(2, "Files loaded from '" + fileManager.getDirectory() + "' directory.");
     }
 
     /*
@@ -108,14 +89,13 @@ public class ArcheBot {
      */
 
     @SuppressWarnings("unchecked")
-    public final void connect()
+    public void connect()
     {
         if (this.isConnected())
             this.log(3, "Couldn't connect (A connection is already active)");
-
         else
         {
-            reload();
+            this.reload();
             try
             {
                 if (this.getProperty(Property.nick).equals(""))
@@ -124,7 +104,6 @@ public class ArcheBot {
                     this.log(3, "Couldn't connect (No server given)");
                 else if (!this.getProperty(Property.port).matches("\\d+"))
                     this.log(3, "Couldn't connect (Port can only contain digits)");
-
                 else
                 {
                     if (this.getProperty(Property.login).equals(""))
@@ -163,40 +142,60 @@ public class ArcheBot {
                 this.log(3, String.format(exception_message, e.toString()));
                 this.log(2, "Disconnected (A fatal exception occurred while connecting | Reconnect: " + reconnect + ")");
                 if (reconnect)
+                {
+                    try
+                    {
+                        Thread.sleep(60000);
+                    }
+
+                    catch (InterruptedException ie)
+                    {
+                        this.log(3, String.format(exception_message, ie.toString()));
+                    }
                     this.connect();
+                }
             }
         }
     }
 
-    public final void disconnect(String message)
+    public void disconnect()
+    {
+        this.disconnect("Shutting down");
+    }
+
+    public void disconnect(String message)
     {
         this.disconnect(message, false);
     }
 
     @SuppressWarnings("unchecked")
-    public final void disconnect(String message, boolean reconnect)
+    public void disconnect(String message, boolean reconnect)
     {
-        if (connection == null)
+        if (!this.isConnected())
             this.log(2, "Couldn't disconnect (No connection currently exists)");
         else
         {
             if (connection.isActive())
                 connection.send("QUIT :" + message, true);
 
-            HashMap<String, Set<String>> userPermissions = new HashMap<>();
+            properties.removeAll("permissions");
             for (User user : this.getUsers())
             {
-                userPermissions.put(user.getNick(), new HashSet<String>());
+                int i = 1;
                 for (User.Permission permission : user.getPermissions())
-                    userPermissions.get(user.getNick()).add(permission.toString());
+                    if (!permission.equals(User.Permission.DEFAULT))
+                    {
+                        properties.write("permissions." + user.getNick() + "." + i, permission.toString());
+                        i++;
+                    }
             }
-            fileManager.saveObject("permissions", userPermissions);
+            properties.save();
 
             users.clear();
             channels.clear();
-
             connection.close();
             connection = null;
+            nick = "";
 
             this.log(2, "Disconnected (" + message + " | Reconnect: " + reconnect + ")");
 
@@ -208,81 +207,75 @@ public class ArcheBot {
         }
     }
 
-    public final Channel getChannel(String name)
+    public Channel getChannel(String name)
     {
-        return channels.containsKey(name) ? channels.get(name) : null;
+        return channels.containsKey(name) ? channels.get(name) : new Channel(name);
     }
 
-    public final Set<Channel> getChannels()
+    public Set<Channel> getChannels()
     {
         return new HashSet<>(channels.values());
     }
 
-    public final CommandManager getCommandManager()
+    public CommandManager getCommandManager()
     {
         return commandManager;
     }
 
-    public final FileManager getFileManager()
+    public FileManager getFileManager()
     {
         return fileManager;
     }
 
-    public final Set<Listener> getListeners()
+    public Set<Listener> getListeners()
     {
         return new HashSet<>(listeners);
     }
 
-    public final String getNick()
+    public String getNick()
     {
         return nick;
     }
 
-    public final String getProperty(Property property)
+    public String getProperty(Property property)
     {
-        return properties.getProperty(property.toString());
+        return properties.getText(property.toString());
     }
 
-    public final User getUser(String nick)
+    public User getUser(String nick)
     {
         User user;
         if (users.containsKey(nick))
             user = users.get(nick);
         else
         {
-            if (!userPermissions.containsKey(nick))
-                userPermissions.put(nick, new HashSet<String>());
             user = new User(nick);
             users.put(nick, user);
-            for (String p : userPermissions.get(nick))
-                user.givePermission(User.Permission.generate(p));
-            if (!user.hasPermission(User.Permission.DEFAULT))
-                user.givePermission(User.Permission.DEFAULT);
         }
         return user;
     }
 
-    public final Set<User> getUsers()
+    public Set<User> getUsers()
     {
         return new HashSet<>(users.values());
     }
 
-    public final boolean isConnected()
+    public boolean isConnected()
     {
         return connection != null;
     }
 
-    public final boolean isInChannel(String name)
+    public boolean isInChannel(String name)
     {
         return channels.containsKey(name);
     }
 
-    public final boolean isUser(String nick)
+    public boolean isUser(String nick)
     {
         return users.containsKey(nick);
     }
 
-    public final void registerListener(Listener listener)
+    public void registerListener(Listener listener)
     {
         listeners.add(listener);
     }
@@ -290,14 +283,51 @@ public class ArcheBot {
     public void reload()
     {
         if (new File(fileManager.getDirectory()).mkdir())
-            this.log(2, "New files directory created.");
+            System.out.println("[New directory created]");
+        properties = fileManager.loadPMLFile("bot", 2);
 
-        if (!fileManager.propertiesExists(Property.file_name))
-            fileManager.saveProperties(Property.file_name, Property.getDefaultValues());
-        properties = fileManager.loadProperties(Property.file_name);
+        if (!properties.isTitle("" + Property.nick))
+            properties.write("" + Property.nick, "ArcheBot");
+        if (!properties.isTitle("" + Property.login))
+            properties.write("" + Property.login, "ArcheBot");
+        if (!properties.isTitle("" + Property.realname))
+            properties.write("" + Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
+        if (!properties.isTitle("" + Property.server))
+            properties.write("" + Property.server, "irc.esper.net");
+        if (!properties.isTitle("" + Property.serverPass))
+            properties.write("" + Property.serverPass, "");
+        if (!properties.isTitle("" + Property.port))
+            properties.write("" + Property.port, "6667");
+        if (!properties.isTitle("" + Property.nickservID))
+            properties.write("" + Property.nickservID, "");
+        if (!properties.isTitle("" + Property.nickservPass))
+            properties.write("" + Property.nickservPass, "");
+        if (!properties.isTitle("" + Property.prefix))
+            properties.write("" + Property.prefix, "+");
+        if (!properties.isTitle("" + Property.channels))
+            properties.write("" + Property.channels, "#PotatoBot");
+        if (!properties.isTitle("" + Property.verbose))
+            properties.write("" + Property.verbose, "true");
+        if (!properties.isTitle("" + Property.rename))
+            properties.write("" + Property.rename, "false");
+        if (!properties.isTitle("" + Property.reconnect))
+            properties.write("" + Property.reconnect, "false");
+
+        for (User user : this.getUsers())
+            for (User.Permission permission : user.getPermissions())
+                user.removePermission(permission);
+
+        if (!properties.isTitle("permissions"))
+            properties.write("permissions", "");
+
+        for (String nick : properties.getSubtitles("permissions"))
+            for (String p : properties.getSubtitles(nick))
+                this.getUser(properties.getOriginalTitle(nick)).givePermission(User.Permission.generate(properties.getText(p)));
+
+        properties.save();
     }
 
-    public final void send(IrcAction action)
+    public void send(IrcAction action)
     {
         if (this.isConnected())
             connection.send(action.toString(), false);
@@ -305,23 +335,22 @@ public class ArcheBot {
             this.log(3, "Couldn't send output (No active connection exists!)");
     }
 
-    public final void setProperty(Property property, String value)
+    public void setProperty(Property property, String value)
     {
-        properties.setProperty(property.toString(), value);
-        fileManager.saveProperties(Property.file_name, properties);
+        properties.write(property.toString(), value);
     }
 
-    public final void setProperty(Property property, int value)
-    {
-        this.setProperty(property, "" + value);
-    }
-
-    public final void setProperty(Property property, boolean value)
+    public void setProperty(Property property, int value)
     {
         this.setProperty(property, "" + value);
     }
 
-    public final User toUser()
+    public void setProperty(Property property, boolean value)
+    {
+        this.setProperty(property, "" + value);
+    }
+
+    public User toUser()
     {
         return isConnected() ? this.getUser(nick) : null;
     }
@@ -341,10 +370,11 @@ public class ArcheBot {
     @Override
     public String toString()
     {
-        return String.format("%s {LOGIN:%s} {REALNAME:%s} {VERSION:%s} {CONNECTED:%b}",
+        return String.format("%s {LOGIN:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b}",
                 nick,
                 this.getProperty(Property.login),
                 this.getProperty(Property.realname),
+                this.getProperty(Property.server),
                 VERSION,
                 this.isConnected());
     }
@@ -357,7 +387,7 @@ public class ArcheBot {
 
     synchronized void log(int msgType, String line)
     {
-        if (!this.isConnected() || StringManager.toBoolean(this.getProperty(Property.verbose)))
+        if (StringManager.toBoolean(this.getProperty(Property.verbose)))
             System.out.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
     }
 
@@ -403,12 +433,12 @@ public class ArcheBot {
 
         nick("nick"),
         login("login"),
-        realname("real name"),
+        realname("realname"),
         server("server"),
-        serverPass("server password"),
+        serverPass("serverPass"),
         port("port"),
-        nickservID("nickserv ID"),
-        nickservPass("nickserv password"),
+        nickservID("nickservID"),
+        nickservPass("nickservPass"),
         prefix("prefix"),
         operators("operators"),
         channels("channels"),
@@ -421,8 +451,6 @@ public class ArcheBot {
          * Variables and objects:
          * =======================================
          */
-
-        public static final String file_name = "bot";
 
         private final String string;
 
@@ -446,7 +474,7 @@ public class ArcheBot {
         @Override
         public String toString()
         {
-            return string;
+            return "properties." + string;
         }
 
         /*
@@ -458,38 +486,9 @@ public class ArcheBot {
         public static Property getProperty(String string)
         {
             for (Property property : Property.values())
-                if (property.string.equals(string))
+                if (property.string.equals(string) || property.toString().equals(string))
                     return property;
             return null;
-        }
-
-        public static Properties getDefaultValues()
-        {
-            Properties properties = new Properties()
-            {
-                @Override
-                public synchronized Enumeration<Object> keys()
-                {
-                    return Collections.enumeration(new TreeSet<>(super.keySet()));
-                }
-            };
-
-            properties.setProperty(nick.toString(), "ArcheBot");
-            properties.setProperty(login.toString(), "ArcheBot");
-            properties.setProperty(realname.toString(), "ArcheBot (Version {VERSION}) by p_slice");
-            properties.setProperty(server.toString(), "irc.esper.net");
-            properties.setProperty(serverPass.toString(), "");
-            properties.setProperty(port.toString(), "6667");
-            properties.setProperty(nickservID.toString(), "");
-            properties.setProperty(nickservPass.toString(), "");
-            properties.setProperty(prefix.toString(), "+");
-            properties.setProperty(operators.toString(), "p_slice");
-            properties.setProperty(channels.toString(), "#PotatoBot");
-            properties.setProperty(verbose.toString(), "true");
-            properties.setProperty(rename.toString(), "false");
-            properties.setProperty(reconnect.toString(), "false");
-
-            return properties;
         }
     }
 }
