@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class User {
+public class User {
 
     /*
      * =======================================
@@ -140,23 +140,18 @@ public final class User {
      * =======================================
      */
 
-    public static class Permission {
+    public static class Permission
+    {
         /*
          * =======================================
          * Objects and variables:
          * =======================================
          */
 
-        public static final Permission DEFAULT  = new Permission("permission.default"),
-                                       OPERATOR = new Permission("permission.operator");
-
         private static final HashMap<String, Permission> permissions = new HashMap<>();
 
-        static
-        {
-            permissions.put(DEFAULT.ID, DEFAULT);
-            permissions.put(OPERATOR.ID, OPERATOR);
-        }
+        public static final Permission DEFAULT  = new Permission("permission.default"),
+                                       OPERATOR = new Permission("permission.operator");
 
         private final String ID;
 
@@ -169,6 +164,7 @@ public final class User {
         private Permission(String ID)
         {
             this.ID = ID;
+            permissions.put(ID, this);
         }
 
         /*
@@ -202,16 +198,7 @@ public final class User {
 
         public static Permission generate(String ID)
         {
-            Permission permission;
-            if (permissions.containsKey(ID))
-                permission = permissions.get(ID);
-            else
-            {
-                permission = new Permission(ID);
-                permissions.put(ID, permission);
-            }
-
-            return permission;
+            return permissions.containsKey(ID) ? permissions.get(ID) : new Permission(ID);
         }
 
         public static Set<Permission> getAllPermissions()
@@ -220,7 +207,8 @@ public final class User {
         }
     }
 
-    public static enum Mode {
+    public static enum Mode
+    {
 
         /*
          * =======================================
@@ -257,20 +245,6 @@ public final class User {
 
         /*
          * =======================================
-         * Static methods:
-         * =======================================
-         */
-
-        public static Mode getModeFromID(char ID)
-        {
-            for (Mode mode : Mode.values())
-                if (mode.ID == ID)
-                    return mode;
-            return null;
-        }
-
-        /*
-         * =======================================
          * Overridden methods:
          * =======================================
          */
@@ -279,6 +253,20 @@ public final class User {
         public String toString()
         {
             return "" + ID;
+        }
+
+        /*
+         * =======================================
+         * Static methods:
+         * =======================================
+         */
+
+        public static Mode getMode(char ID)
+        {
+            for (Mode mode : Mode.values())
+                if (mode.ID == ID)
+                    return mode;
+            return null;
         }
     }
 }

@@ -3,9 +3,9 @@ package net.pslice.archebot;
 import net.pslice.archebot.actions.JoinAction;
 import net.pslice.archebot.actions.NickservAction;
 import net.pslice.archebot.listeners.ConnectionListener;
-import net.pslice.utilities.managers.FileManager;
-import net.pslice.utilities.managers.StringManager;
-import net.pslice.utilities.pml.PMLFile;
+import net.pslice.utilities.FileManager;
+import net.pslice.utilities.PMLFile;
+import net.pslice.utilities.StringUtils;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -20,7 +20,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.1";
+    public static final String VERSION = "1.2";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -37,10 +37,7 @@ public class ArcheBot {
     };
 
     // The format of the date in the bot's output log
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['hh:mm:ss'] '");
-
-    // The CommandManager used by the bot to keep track of commands
-    private final CommandManager commandManager = new CommandManager();
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['HH:mm:ss'] '");
 
     // The Set of registered event listeners
     private final Set<Listener> listeners = new HashSet<>();
@@ -50,6 +47,9 @@ public class ArcheBot {
 
     // All currently known users
     private final HashMap<String, User> users = new HashMap<>();
+
+    // All registered commands
+    private final HashMap<String, Command> commands = new HashMap<>();
 
     // The FileManager used for loading/saving files
     private final FileManager fileManager;
@@ -92,24 +92,26 @@ public class ArcheBot {
     public void connect()
     {
         if (this.isConnected())
-            this.log(3, "Couldn't connect (A connection is already active)");
+            this.log(3, "Error connecting (A connection is already active)");
         else
         {
             this.reload();
             try
             {
                 if (this.getProperty(Property.nick).equals(""))
-                    this.log(3, "Couldn't connect (No nick given)");
+                    this.log(3, "Error connecting (No nick given)");
                 else if (this.getProperty(Property.server).equals(""))
-                    this.log(3, "Couldn't connect (No server given)");
+                    this.log(3, "Error connecting (No server given)");
                 else if (!this.getProperty(Property.port).matches("\\d+"))
-                    this.log(3, "Couldn't connect (Port can only contain digits)");
+                    this.log(3, "Error connecting (Port can only contain digits)");
                 else
                 {
                     if (this.getProperty(Property.login).equals(""))
                         this.setProperty(Property.login, this.getProperty(Property.nick));
                     if (this.getProperty(Property.realname).equals(""))
                         this.setProperty(Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
+                    if (!this.getProperty(Property.messageDelay).matches("\\d+"))
+                        this.setProperty(Property.messageDelay, 1000);
 
                     connection = new Connection(this);
 
@@ -121,7 +123,7 @@ public class ArcheBot {
                             this.send(NickservAction.build(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
                     }
 
-                    for (String channel : StringManager.breakList(this.getProperty(Property.channels)))
+                    for (String channel : StringUtils.breakList(this.getProperty(Property.channels)))
                         this.send(JoinAction.build(channel));
 
                     for (Listener listener : listeners)
@@ -137,7 +139,7 @@ public class ArcheBot {
 
             catch (Exception e)
             {
-                boolean reconnect = StringManager.toBoolean(this.getProperty(Property.reconnect));
+                boolean reconnect = StringUtils.toBoolean(this.getProperty(Property.reconnect));
 
                 this.log(3, String.format(exception_message, e.toString()));
                 this.log(2, "Disconnected (A fatal exception occurred while connecting | Reconnect: " + reconnect + ")");
@@ -172,7 +174,7 @@ public class ArcheBot {
     public void disconnect(String message, boolean reconnect)
     {
         if (!this.isConnected())
-            this.log(2, "Couldn't disconnect (No connection currently exists)");
+            this.log(2, "Error disconnecting (No connection currently exists)");
         else
         {
             if (connection.isActive())
@@ -193,6 +195,7 @@ public class ArcheBot {
 
             users.clear();
             channels.clear();
+
             connection.close();
             connection = null;
             nick = "";
@@ -217,9 +220,14 @@ public class ArcheBot {
         return new HashSet<>(channels.values());
     }
 
-    public CommandManager getCommandManager()
+    public Command getCommand(String ID)
     {
-        return commandManager;
+        return commands.containsKey(ID) ? commands.get(ID) : null;
+    }
+
+    public Set<Command> getCommands()
+    {
+        return new TreeSet<>(commands.values());
     }
 
     public FileManager getFileManager()
@@ -240,6 +248,11 @@ public class ArcheBot {
     public String getProperty(Property property)
     {
         return properties.getText(property.toString());
+    }
+
+    public Set<String> getRegisteredIDs()
+    {
+        return new TreeSet<>(commands.keySet());
     }
 
     public User getUser(String nick)
@@ -270,9 +283,32 @@ public class ArcheBot {
         return channels.containsKey(name);
     }
 
+    public boolean isRegistered(Command command)
+    {
+        return commands.containsValue(command);
+    }
+
+    public boolean isRegistered(String ID)
+    {
+        return commands.containsKey(ID);
+    }
+
     public boolean isUser(String nick)
     {
         return users.containsKey(nick);
+    }
+
+    public void registerCommand(Command command)
+    {
+        commands.put(command.getName(), command);
+        for (String ID : command.getIDs())
+            commands.put(ID, command);
+    }
+
+    public void registerCommands(Command... commands)
+    {
+        for (Command command : commands)
+            this.registerCommand(command);
     }
 
     public void registerListener(Listener listener)
@@ -298,6 +334,8 @@ public class ArcheBot {
             properties.write("" + Property.serverPass, "");
         if (!properties.isTitle("" + Property.port))
             properties.write("" + Property.port, "6667");
+        if (!properties.isTitle("" + Property.messageDelay))
+            properties.write(""+ Property.messageDelay, "1000");
         if (!properties.isTitle("" + Property.nickservID))
             properties.write("" + Property.nickservID, "");
         if (!properties.isTitle("" + Property.nickservPass))
@@ -352,7 +390,7 @@ public class ArcheBot {
 
     public User toUser()
     {
-        return isConnected() ? this.getUser(nick) : null;
+        return this.isConnected() ? this.getUser(nick) : null;
     }
 
     /*
@@ -387,7 +425,7 @@ public class ArcheBot {
 
     synchronized void log(int msgType, String line)
     {
-        if (StringManager.toBoolean(this.getProperty(Property.verbose)))
+        if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
             System.out.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
     }
 
@@ -423,8 +461,8 @@ public class ArcheBot {
      * =======================================
      */
 
-    public static enum Property {
-
+    public static enum Property
+    {
         /*
          * =======================================
          * Enum values:
@@ -437,6 +475,7 @@ public class ArcheBot {
         server("server"),
         serverPass("serverPass"),
         port("port"),
+        messageDelay("messageDelay"),
         nickservID("nickservID"),
         nickservPass("nickservPass"),
         prefix("prefix"),

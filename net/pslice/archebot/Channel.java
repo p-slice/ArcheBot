@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class Channel {
+public class Channel {
 
     /*
      * =======================================
@@ -54,7 +54,7 @@ public final class Channel {
 
     public Set<User.Mode> getModes(User user)
     {
-        return users.get(user);
+        return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
     }
 
     public String getName()
@@ -95,7 +95,7 @@ public final class Channel {
 
     public boolean hasMode(User user, User.Mode mode)
     {
-        return users.get(user).contains(mode);
+        return users.containsKey(user) && users.get(user).contains(mode);
     }
 
     public int totalUsers()
@@ -176,7 +176,8 @@ public final class Channel {
      * =======================================
      */
 
-    public static enum Mode {
+    public static enum Mode
+    {
         /*
          * =======================================
          * Enum values:

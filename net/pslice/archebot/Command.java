@@ -1,6 +1,6 @@
 package net.pslice.archebot;
 
-import net.pslice.utilities.managers.StringManager;
+import net.pslice.utilities.StringUtils;
 
 public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
 
@@ -111,7 +111,7 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
                 parameters,
                 description,
                 enabled,
-                StringManager.compressArray(IDs, 0, ", ", false));
+                StringUtils.compact(IDs, 0, ", "));
     }
 
     @SuppressWarnings("NullableProblems")
