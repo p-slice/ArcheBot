@@ -13,7 +13,7 @@ public class Channel {
      */
 
     // The name of the channel
-    private final String name;
+    public final String name;
 
     // Information about the channel topic
     private String topic       = "",

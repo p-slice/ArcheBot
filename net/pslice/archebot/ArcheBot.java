@@ -8,6 +8,7 @@ import net.pslice.utilities.PMLFile;
 import net.pslice.utilities.StringUtils;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -20,7 +21,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.2";
+    public static final String VERSION = "1.3";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -37,7 +38,7 @@ public class ArcheBot {
     };
 
     // The format of the date in the bot's output log
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['HH:mm:ss'] '");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
 
     // The Set of registered event listeners
     private final Set<Listener> listeners = new HashSet<>();
@@ -57,6 +58,9 @@ public class ArcheBot {
     // The PML file containing all bot data
     private PMLFile properties;
 
+    // The output stream to log data to
+    private PrintStream out = System.out;
+
     // The current connection the bot is using
     private Connection connection;
 
@@ -71,7 +75,7 @@ public class ArcheBot {
 
     public ArcheBot()
     {
-        this("ArcheBot Files");
+        this("");
     }
 
     public ArcheBot(String directory)
@@ -129,7 +133,7 @@ public class ArcheBot {
                     for (Listener listener : listeners)
                         if (listener instanceof ConnectionListener)
                             ((ConnectionListener) listener).onConnect(this);
-                    }
+                }
             }
 
             catch (Connection.ConnectionException e)
@@ -373,6 +377,11 @@ public class ArcheBot {
             this.log(3, "Couldn't send output (No active connection exists!)");
     }
 
+    public void setOutputStream(PrintStream stream)
+    {
+        out = stream;
+    }
+
     public void setProperty(Property property, String value)
     {
         properties.write(property.toString(), value);
@@ -426,7 +435,7 @@ public class ArcheBot {
     synchronized void log(int msgType, String line)
     {
         if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
-            System.out.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
+            out.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
     }
 
     void setNick(String nick)
@@ -447,7 +456,7 @@ public class ArcheBot {
 
     void addChannel(Channel channel)
     {
-        channels.put(channel.getName(), channel);
+        channels.put(channel.name, channel);
     }
 
     void removeChannel(String name)

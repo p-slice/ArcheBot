@@ -28,7 +28,7 @@ public final class GiveModeAction extends IrcAction {
 
     public static GiveModeAction build(Channel channel, Channel.Mode mode)
     {
-        return build(channel.getName(), mode);
+        return build(channel.name, mode);
     }
 
     public static GiveModeAction build(String channel, Channel.Mode mode)
@@ -39,7 +39,7 @@ public final class GiveModeAction extends IrcAction {
 
     public static GiveModeAction build(Channel channel, User user, User.Mode mode)
     {
-        return build(channel.getName(), user.getNick(), mode);
+        return build(channel.name, user.getNick(), mode);
     }
 
     public static GiveModeAction build(String channel, String user, User.Mode mode)

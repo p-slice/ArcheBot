@@ -30,7 +30,7 @@ public final class SelfAction extends IrcAction {
 
     public static SelfAction build(Channel channel, String action)
     {
-        return build(channel.getName(), action);
+        return build(channel.name, action);
     }
 
     public static SelfAction build(User user, String action)

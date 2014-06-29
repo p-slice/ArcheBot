@@ -30,6 +30,7 @@ final class Connection {
     // The status of the connection
     private boolean active = false;
 
+    // The wait time (in milliseconds) between messages sent to the server
     private int messageDelay;
 
     /*
@@ -94,11 +95,11 @@ final class Connection {
             }
 
             else if (messageSplit[1].startsWith("4") || messageSplit[1].startsWith("5"))
-                throw new ConnectionException( StringUtils.compact(messageSplit, 3, true));
+                throw new ConnectionException(StringUtils.compact(messageSplit, 3).substring(1));
         }
         active = true;
 
-        socket.setSoTimeout(4 * 60000);
+        socket.setSoTimeout(240000);
 
         input.start();
         output.start();
@@ -176,20 +177,12 @@ final class Connection {
                     this.KICK(source, lineSplit);
                     break;
 
-                case "332":
-                    bot.getChannel(lineSplit[3]).setTopic(StringUtils.compact(lineSplit, 4, true));
+                case "TOPIC":
+                    this.TOPIC(source, lineSplit);
                     break;
 
-                case "333":
-                    bot.getChannel(lineSplit[3]).setTopicSetter(lineSplit[4]);
-                    break;
-
-                case "352":
-                    this.E352(lineSplit);
-                    break;
-
-                case "324":
-                    this.E324(lineSplit);
+                case "INVITE":
+                    this.INVITE(source, lineSplit);
                     break;
 
                 case "311":
@@ -198,6 +191,26 @@ final class Connection {
 
                 case "312":
                     bot.getUser(lineSplit[3]).setServer(lineSplit[4]);
+                    break;
+
+                case "322":
+                    this.E322(lineSplit);
+                    break;
+
+                case "324":
+                    this.E324(lineSplit);
+                    break;
+
+                case "332":
+                    bot.getChannel(lineSplit[3]).setTopic(StringUtils.compact(lineSplit, 4).substring(1));
+                    break;
+
+                case "333":
+                    bot.getChannel(lineSplit[3]).setTopicSetter(lineSplit[4]);
+                    break;
+
+                case "352":
+                    this.E352(lineSplit);
                     break;
 
                 case "001":
@@ -211,10 +224,14 @@ final class Connection {
                 case "254":
                 case "255":
                 case "265":
+                case "301":
+                case "307":
                 case "315":
                 case "317":
                 case "318":
                 case "319":
+                case "321":
+                case "323":
                 case "329":
                 case "330":
                 case "353":
@@ -229,7 +246,7 @@ final class Connection {
                     {
                         for (Listener listener : bot.getListeners())
                             if (listener instanceof RawListener)
-                                ((RawListener) listener).onServerError(bot, lineSplit[2], StringUtils.compact(lineSplit, 3, true));
+                                ((RawListener) listener).onServerError(bot, lineSplit[2], StringUtils.compact(lineSplit, 3).substring(1));
                     }
 
                     else
@@ -266,7 +283,7 @@ final class Connection {
 
     private void PRIVMSG(User source, String[] lineSplit)
     {
-        String message = StringUtils.compact(lineSplit, 3, true);
+        String message = StringUtils.compact(lineSplit, 3).substring(1);
 
         if (message.startsWith("\u0001") && message.endsWith("\u0001"))
         {
@@ -330,31 +347,31 @@ final class Connection {
         {
             for (Listener listener : bot.getListeners())
                 if (listener instanceof NoticeListener)
-                    ((NoticeListener) listener).onPrivateNotice(bot, source, StringUtils.compact(lineSplit, 3, true));
+                    ((NoticeListener) listener).onPrivateNotice(bot, source, StringUtils.compact(lineSplit, 3).substring(1));
         }
 
         else
         {
             for (Listener listener : bot.getListeners())
                 if (listener instanceof NoticeListener)
-                    ((NoticeListener) listener).onNotice(bot, bot.getChannel(lineSplit[2]), source, StringUtils.compact(lineSplit, 3, true));
+                    ((NoticeListener) listener).onNotice(bot, bot.getChannel(lineSplit[2]), source, StringUtils.compact(lineSplit, 3).substring(1));
         }
     }
 
     private void JOIN(User source, String[] lineSplit)
     {
+        Channel channel = bot.getChannel(lineSplit[2]);
+        channel.addUser(source);
+
         if (source.equals(bot.toUser()))
         {
-            bot.addChannel(new Channel(lineSplit[2]));
+            bot.addChannel(channel);
             bot.send(RawAction.build("WHO " + lineSplit[2]));
             bot.send(RawAction.build("MODE " + lineSplit[2]));
         }
 
         else
             bot.send(RawAction.build("WHOIS " + source.getNick()));
-
-        Channel channel = bot.getChannel(lineSplit[2]);
-        channel.addUser(source);
 
         for (Listener listener : bot.getListeners())
             if (listener instanceof JoinListener)
@@ -365,13 +382,13 @@ final class Connection {
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         if (source.equals(bot.toUser()))
-            bot.removeChannel(channel.getName());
+            bot.removeChannel(channel.name);
         else
             channel.removeUser(source);
 
         for (Listener listener : bot.getListeners())
             if (listener instanceof PartListener)
-                ((PartListener) listener).onPart(bot, channel, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3, true) : "");
+                ((PartListener) listener).onPart(bot, channel, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : "");
     }
 
     private void QUIT(User source, String[] lineSplit)
@@ -383,7 +400,7 @@ final class Connection {
 
         for (Listener listener : bot.getListeners())
             if (listener instanceof QuitListener)
-                ((QuitListener) listener).onQuit(bot, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3, true) : "");
+                ((QuitListener) listener).onQuit(bot, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : "");
     }
 
     private void NICK(User source, String[] lineSplit)
@@ -466,7 +483,34 @@ final class Connection {
         channel.removeUser(user);
         for (Listener listener : bot.getListeners())
             if (listener instanceof KickListener)
-                ((KickListener) listener).onKick(bot, channel, source, user, StringUtils.compact(lineSplit, 4, true));
+                ((KickListener) listener).onKick(bot, channel, source, user, StringUtils.compact(lineSplit, 4).substring(1));
+    }
+
+    private void TOPIC(User source, String[] lineSplit)
+    {
+        Channel channel = bot.getChannel(lineSplit[2]);
+        String topic = StringUtils.compact(lineSplit, 3).substring(1);
+        channel.setTopic(topic);
+        channel.setTopicSetter("" + source);
+
+        for (Listener listener : bot.getListeners())
+            if (listener instanceof TopicListener)
+                ((TopicListener) listener).onTopicSet(bot, channel, source, topic);
+    }
+
+    public void INVITE(User source, String[] lineSplit)
+    {
+        for (String chan : StringUtils.compact(lineSplit, 3).substring(1).split(" "))
+            for (Listener listener : bot.getListeners())
+                if (listener instanceof InviteListener)
+                    ((InviteListener) listener).onInvite(bot, bot.getChannel(chan), source);
+    }
+
+    private void E322(String[] lineSplit)
+    {
+        Channel channel = bot.getChannel(lineSplit[3]);
+        if (channel.totalUsers() != Integer.parseInt(lineSplit[4]))
+            bot.send(RawAction.build("WHO " + channel.name));
     }
 
     private void E352(String[] lineSplit)
@@ -530,7 +574,7 @@ final class Connection {
         User user = bot.getUser(lineSplit[3]);
         user.setLogin(lineSplit[4]);
         user.setHostmask(lineSplit[5]);
-        user.setRealname(StringUtils.compact(lineSplit, 7, true));
+        user.setRealname(StringUtils.compact(lineSplit, 7).substring(1));
     }
 
     /*
@@ -539,7 +583,8 @@ final class Connection {
      * =======================================
      */
 
-    private final class InputThread extends Thread {
+    private final class InputThread extends Thread
+    {
 
         /*
          * =======================================
@@ -599,7 +644,8 @@ final class Connection {
         }
     }
 
-    private final class OutputThread extends Thread {
+    private final class OutputThread extends Thread
+    {
 
         /*
          * =======================================
@@ -691,7 +737,8 @@ final class Connection {
         }
     }
 
-    static final class ConnectionException extends Exception {
+    static final class ConnectionException extends Exception
+    {
 
         /*
          * =======================================

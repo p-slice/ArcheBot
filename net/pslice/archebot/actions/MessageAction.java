@@ -30,7 +30,7 @@ public final class MessageAction extends IrcAction {
 
     public static MessageAction build(Channel channel, String message)
     {
-        return build(channel.getName(), message);
+        return build(channel.name, message);
     }
 
     public static MessageAction build(User user, String message)

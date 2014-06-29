@@ -35,7 +35,7 @@ public final class KickAction extends IrcAction {
 
     public static KickAction build(Channel channel, User user, String reason)
     {
-        return build(channel.getName(), user.getNick(), reason);
+        return build(channel.name, user.getNick(), reason);
     }
 
     public static KickAction build(String channel, String user)

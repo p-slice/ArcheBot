@@ -34,7 +34,7 @@ public final class PartAction extends IrcAction {
 
     public static PartAction build(Channel channel, String reason)
     {
-        return build(channel.getName(), reason);
+        return build(channel.name, reason);
     }
 
     public static PartAction build(String channel)

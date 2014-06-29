@@ -28,7 +28,7 @@ public final class RemoveModeAction extends IrcAction {
 
     public static RemoveModeAction build(Channel channel, Channel.Mode mode)
     {
-        return build(channel.getName(), mode);
+        return build(channel.name, mode);
     }
 
     public static RemoveModeAction build(String channel, Channel.Mode mode)
@@ -39,7 +39,7 @@ public final class RemoveModeAction extends IrcAction {
 
     public static RemoveModeAction build(Channel channel, User user, User.Mode mode)
     {
-        return build(channel.getName(), user.getNick(), mode);
+        return build(channel.name, user.getNick(), mode);
     }
 
     public static RemoveModeAction build(String channel, String user, User.Mode mode)

@@ -4,7 +4,7 @@ import net.pslice.archebot.Channel;
 import net.pslice.archebot.IrcAction;
 import net.pslice.archebot.User;
 
-public final class NoticeAction extends IrcAction {
+public final class InviteAction extends IrcAction {
 
     /*
      * =======================================
@@ -12,7 +12,7 @@ public final class NoticeAction extends IrcAction {
      * =======================================
      */
 
-    private static final NoticeAction instance = new NoticeAction();
+    private static final InviteAction instance = new InviteAction();
 
     /*
      * =======================================
@@ -20,7 +20,7 @@ public final class NoticeAction extends IrcAction {
      * =======================================
      */
 
-    private NoticeAction() {}
+    private InviteAction() {}
 
     /*
      * =======================================
@@ -28,19 +28,14 @@ public final class NoticeAction extends IrcAction {
      * =======================================
      */
 
-    public static NoticeAction build(Channel channel, String notice)
+    public static InviteAction build(Channel channel, User user)
     {
-        return build(channel.name, notice);
+        return build(channel.name, user.getNick());
     }
 
-    public static NoticeAction build(User user, String notice)
+    public static InviteAction build(String channel, String user)
     {
-        return build(user.getNick(), notice);
-    }
-
-    public static NoticeAction build(String target, String notice)
-    {
-        instance.setText("NOTICE " + target + " :" + notice);
+        instance.setText("INVITE " + user + " " + channel);
         return instance;
     }
 }
