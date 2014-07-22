@@ -1,5 +1,7 @@
 package net.pslice.archebot;
 
+import net.pslice.utilities.StringUtils;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,7 +25,7 @@ public class Channel {
     private final HashMap<User, Set<User.Mode>> users = new HashMap<>();
 
     // The current modes set on the channel
-    private final Set<Channel.Mode> modes = new HashSet<>();
+    private final Set<Mode> modes = new HashSet<>();
 
     /*
      * =======================================
@@ -47,7 +49,7 @@ public class Channel {
         return users.containsKey(user);
     }
 
-    public Set<Channel.Mode> getModes()
+    public Set<Mode> getModes()
     {
         return new HashSet<>(modes);
     }
@@ -88,7 +90,7 @@ public class Channel {
         return modeUsers;
     }
 
-    public boolean hasMode(Channel.Mode mode)
+    public boolean hasMode(Mode mode)
     {
         return modes.contains(mode);
     }
@@ -112,6 +114,11 @@ public class Channel {
         return size;
     }
 
+    public StaticChannel toStaticChannel()
+    {
+        return new StaticChannel(this);
+    }
+
     /*
      * =======================================
      * Overridden methods:
@@ -121,7 +128,15 @@ public class Channel {
     @Override
     public String toString()
     {
-        return name;
+        int i;
+        return  name +
+                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes, 0, "") + "}" : "") +
+                ((i = totalUsers(User.Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
+                ((i = totalUsers(User.Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
+                ((i = totalUsers(User.Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
+                ((i = totalUsers(User.Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
+                ((i = totalUsers(User.Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
+                " {TOTAL USERS:" + totalUsers() + "}";
     }
 
     /*
@@ -150,12 +165,12 @@ public class Channel {
         users.get(user).remove(mode);
     }
 
-    void addMode(Channel.Mode mode)
+    void addMode(Mode mode)
     {
         modes.add(mode);
     }
 
-    void removeMode(Channel.Mode mode)
+    void removeMode(Mode mode)
     {
         modes.remove(mode);
     }
@@ -189,7 +204,16 @@ public class Channel {
         topicProtection('t'),
         hidden('p'),
         secret('s'),
-        noExternalMessages('n');
+        noExternalMessages('n'),
+        freeTarget('F'),
+        disableForward('Q'),
+        noCTCP('C'),
+        noColour('c'),
+        opModerated('z'),
+        registeredOnly('r'),
+        freeInvite('g'),
+        permanent('P'),
+        largeList('L');
 
         /*
          * =======================================

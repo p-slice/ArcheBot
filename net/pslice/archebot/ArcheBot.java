@@ -21,7 +21,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.3";
+    public static final String VERSION = "1.4";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -38,7 +38,7 @@ public class ArcheBot {
     };
 
     // The format of the date in the bot's output log
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss] ");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['HH:mm:ss:SSS'] '");
 
     // The Set of registered event listeners
     private final Set<Listener> listeners = new HashSet<>();
@@ -59,10 +59,13 @@ public class ArcheBot {
     private PMLFile properties;
 
     // The output stream to log data to
-    private PrintStream out = System.out;
+    private PrintStream stream = System.out;
 
     // The current connection the bot is using
     private Connection connection;
+
+    // The time the last connection was formed at, used for calculating uptime
+    private long connectTime = 0;
 
     // The name the bot is known by on the server
     private String nick = "";
@@ -96,18 +99,18 @@ public class ArcheBot {
     public void connect()
     {
         if (this.isConnected())
-            this.log(3, "Error connecting (A connection is already active)");
+            this.log(3, "Unable to connect (A connection is already active)");
         else
         {
             this.reload();
             try
             {
                 if (this.getProperty(Property.nick).equals(""))
-                    this.log(3, "Error connecting (No nick given)");
+                    this.log(3, "Unable to connect (No nick given)");
                 else if (this.getProperty(Property.server).equals(""))
-                    this.log(3, "Error connecting (No server given)");
+                    this.log(3, "Unable to connect (No server given)");
                 else if (!this.getProperty(Property.port).matches("\\d+"))
-                    this.log(3, "Error connecting (Port can only contain digits)");
+                    this.log(3, "Unable to connect (Port can only contain digits)");
                 else
                 {
                     if (this.getProperty(Property.login).equals(""))
@@ -118,6 +121,7 @@ public class ArcheBot {
                         this.setProperty(Property.messageDelay, 1000);
 
                     connection = new Connection(this);
+                    connectTime = System.currentTimeMillis();
 
                     if (!this.getProperty(Property.nickservPass).equals(""))
                     {
@@ -178,11 +182,12 @@ public class ArcheBot {
     public void disconnect(String message, boolean reconnect)
     {
         if (!this.isConnected())
-            this.log(2, "Error disconnecting (No connection currently exists)");
+            this.log(3, "Unable to disconnect (No connection currently exists)");
         else
         {
             if (connection.isActive())
                 connection.send("QUIT :" + message, true);
+            connectTime = 0;
 
             properties.removeAll("permissions");
             for (User user : this.getUsers())
@@ -190,10 +195,7 @@ public class ArcheBot {
                 int i = 1;
                 for (User.Permission permission : user.getPermissions())
                     if (!permission.equals(User.Permission.DEFAULT))
-                    {
-                        properties.write("permissions." + user.getNick() + "." + i, permission.toString());
-                        i++;
-                    }
+                        properties.write("permissions." + user.getNick() + "." + i++, "" + permission);
             }
             properties.save();
 
@@ -254,9 +256,14 @@ public class ArcheBot {
         return properties.getText(property.toString());
     }
 
-    public Set<String> getRegisteredIDs()
+    public Set<String> getRegisteredCommandIDs()
     {
         return new TreeSet<>(commands.keySet());
+    }
+
+    public long getUptime()
+    {
+        return this.isConnected() ? System.currentTimeMillis() - connectTime : 0;
     }
 
     public User getUser(String nick)
@@ -265,10 +272,7 @@ public class ArcheBot {
         if (users.containsKey(nick))
             user = users.get(nick);
         else
-        {
-            user = new User(nick);
-            users.put(nick, user);
-        }
+            users.put(nick, user = new User(nick));
         return user;
     }
 
@@ -280,6 +284,11 @@ public class ArcheBot {
     public boolean isConnected()
     {
         return connection != null;
+    }
+
+    public boolean isInChannel(Channel channel)
+    {
+        return this.isInChannel(channel.name);
     }
 
     public boolean isInChannel(String name)
@@ -300,6 +309,11 @@ public class ArcheBot {
     public boolean isUser(String nick)
     {
         return users.containsKey(nick);
+    }
+
+    public void log(String line)
+    {
+        this.log(2, line);
     }
 
     public void registerCommand(Command command)
@@ -323,41 +337,40 @@ public class ArcheBot {
     public void reload()
     {
         if (new File(fileManager.getDirectory()).mkdir())
-            System.out.println("[New directory created]");
+            stream.println("[New directory created]");
         properties = fileManager.loadPMLFile("bot", 2);
 
         if (!properties.isTitle("" + Property.nick))
-            properties.write("" + Property.nick, "ArcheBot");
+            this.setProperty(Property.nick, "ArcheBot");
         if (!properties.isTitle("" + Property.login))
-            properties.write("" + Property.login, "ArcheBot");
+            this.setProperty(Property.login, "ArcheBot");
         if (!properties.isTitle("" + Property.realname))
-            properties.write("" + Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
+            this.setProperty(Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
         if (!properties.isTitle("" + Property.server))
-            properties.write("" + Property.server, "irc.esper.net");
+            this.setProperty(Property.server, "irc.esper.net");
         if (!properties.isTitle("" + Property.serverPass))
-            properties.write("" + Property.serverPass, "");
+            this.setProperty(Property.serverPass, "");
         if (!properties.isTitle("" + Property.port))
-            properties.write("" + Property.port, "6667");
+            this.setProperty(Property.port, 6667);
         if (!properties.isTitle("" + Property.messageDelay))
-            properties.write(""+ Property.messageDelay, "1000");
+            this.setProperty(Property.messageDelay, 1000);
         if (!properties.isTitle("" + Property.nickservID))
-            properties.write("" + Property.nickservID, "");
+            this.setProperty(Property.nickservID, "");
         if (!properties.isTitle("" + Property.nickservPass))
-            properties.write("" + Property.nickservPass, "");
+            this.setProperty(Property.nickservPass, "");
         if (!properties.isTitle("" + Property.prefix))
-            properties.write("" + Property.prefix, "+");
+            this.setProperty(Property.prefix, "+");
         if (!properties.isTitle("" + Property.channels))
-            properties.write("" + Property.channels, "#PotatoBot");
+            this.setProperty(Property.channels, "#PotatoBot");
         if (!properties.isTitle("" + Property.verbose))
-            properties.write("" + Property.verbose, "true");
+            this.setProperty(Property.verbose, true);
         if (!properties.isTitle("" + Property.rename))
-            properties.write("" + Property.rename, "false");
+            this.setProperty(Property.rename, false);
         if (!properties.isTitle("" + Property.reconnect))
-            properties.write("" + Property.reconnect, "false");
+            this.setProperty(Property.reconnect, false);
 
         for (User user : this.getUsers())
-            for (User.Permission permission : user.getPermissions())
-                user.removePermission(permission);
+            user.resetPermissions();
 
         if (!properties.isTitle("permissions"))
             properties.write("permissions", "");
@@ -374,17 +387,17 @@ public class ArcheBot {
         if (this.isConnected())
             connection.send(action.toString(), false);
         else
-            this.log(3, "Couldn't send output (No active connection exists!)");
+            this.log(3, "Send method failed (No active connection exists!)");
     }
 
     public void setOutputStream(PrintStream stream)
     {
-        out = stream;
+        this.stream = stream;
     }
 
     public void setProperty(Property property, String value)
     {
-        properties.write(property.toString(), value);
+        properties.write("" + property, value);
     }
 
     public void setProperty(Property property, int value)
@@ -399,7 +412,7 @@ public class ArcheBot {
 
     public User toUser()
     {
-        return this.isConnected() ? this.getUser(nick) : null;
+        return this.isConnected() ? this.getUser(nick) : new User(nick);
     }
 
     /*
@@ -409,21 +422,16 @@ public class ArcheBot {
      */
 
     @Override
-    public boolean equals(Object obj)
-    {
-        return obj instanceof ArcheBot && obj.toString().equals(this.toString());
-    }
-
-    @Override
     public String toString()
     {
-        return String.format("%s {LOGIN:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b}",
+        return String.format("%s {LOGIN:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b} {UPTIME:%d}",
                 nick,
                 this.getProperty(Property.login),
                 this.getProperty(Property.realname),
                 this.getProperty(Property.server),
                 VERSION,
-                this.isConnected());
+                this.isConnected(),
+                this.getUptime());
     }
 
     /*
@@ -435,7 +443,7 @@ public class ArcheBot {
     synchronized void log(int msgType, String line)
     {
         if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
-            out.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
+            stream.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
     }
 
     void setNick(String nick)
@@ -448,10 +456,10 @@ public class ArcheBot {
         users.put(user.getNick(), user);
     }
 
-    void removeUser(String name)
+    void removeUser(String nick)
     {
-        if (users.containsKey(name))
-            users.remove(name);
+        if (users.containsKey(nick))
+            users.remove(nick);
     }
 
     void addChannel(Channel channel)
@@ -461,7 +469,8 @@ public class ArcheBot {
 
     void removeChannel(String name)
     {
-        channels.remove(name);
+        if (channels.containsKey(name))
+            channels.remove(name);
     }
 
     /*

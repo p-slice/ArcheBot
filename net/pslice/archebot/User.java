@@ -85,6 +85,17 @@ public class User {
         return new HashSet<>(permissions);
     }
 
+    public void resetPermissions()
+    {
+        permissions.clear();
+        permissions.add(Permission.DEFAULT);
+    }
+
+    public StaticUser toStaticUser()
+    {
+        return new StaticUser(this);
+    }
+
     /*
      * =======================================
      * Overridden methods:
@@ -95,12 +106,6 @@ public class User {
     public String toString()
     {
         return nick + (login.equals("") ? "" : "!" + login) + (hostmask.equals("") ? "" : "@" + hostmask);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        return obj instanceof User && obj.toString().equals(this.toString());
     }
 
     /*
@@ -220,9 +225,7 @@ public class User {
         superOp('a'),
         op('o'),
         halfOp('h'),
-        voice('v'),
-        banned('b'),
-        invited('I');
+        voice('v');
 
         /*
          * =======================================

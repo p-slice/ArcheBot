@@ -85,9 +85,8 @@ final class Connection {
                 if (StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.rename)))
                 {
                     bot.log(3, "Nick already in use (Trying another one!)");
-                    bot.setNick(nick + tries);
+                    bot.setNick(nick + tries++);
                     output.sendLine("NICK " + bot.getNick());
-                    tries++;
                 }
 
                 else
@@ -140,8 +139,6 @@ final class Connection {
             String[] lineSplit = line.split(" ");
 
             User source = bot.getUser(lineSplit[0].substring(1).split("!")[0]);
-            if (lineSplit[0].contains("!") && bot.isUser(source.getNick()))
-                bot.addUser(source);
 
             switch (lineSplit[1])
             {
@@ -224,6 +221,7 @@ final class Connection {
                 case "254":
                 case "255":
                 case "265":
+                case "266":
                 case "301":
                 case "307":
                 case "315":
@@ -302,6 +300,14 @@ final class Connection {
                         if (listener instanceof ActionListener)
                             ((ActionListener) listener).onAction(bot, bot.getChannel(lineSplit[2]), source, message);
                     }
+            }
+
+            else
+            {
+                String command = lineSplit[3].substring(2);
+                for (Listener listener : bot.getListeners())
+                    if (listener instanceof CTCPListener)
+                        ((CTCPListener) listener).onCTCPCommand(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(2 + command.length(), message.length() - 1));
             }
         }
 
@@ -483,7 +489,7 @@ final class Connection {
         channel.removeUser(user);
         for (Listener listener : bot.getListeners())
             if (listener instanceof KickListener)
-                ((KickListener) listener).onKick(bot, channel, source, user, StringUtils.compact(lineSplit, 4).substring(1));
+                ((KickListener) listener).onKick(bot, channel, source, user, StringUtils.compact(lineSplit, 3).substring(1));
     }
 
     private void TOPIC(User source, String[] lineSplit)

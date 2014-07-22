@@ -105,13 +105,13 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
     @Override
     public String toString()
     {
-        return String.format("%s {Permission: %s} {Parameters: %s} {Description: %s} {Enabled: %b} {IDs: %s}",
+        return String.format("%s {PERMISSION:%s} {PARAMETERS:%s} {DESCRIPTION:%s} {ENABLED:%b} {IDS:%s}",
                 name,
                 permission,
                 parameters,
                 description,
                 enabled,
-                StringUtils.compact(IDs, 0, ", "));
+                IDs.length > 0 ? StringUtils.compact(IDs, 0, ", ") : "None");
     }
 
     @SuppressWarnings("NullableProblems")

@@ -33,7 +33,7 @@ public final class GiveModeAction extends IrcAction {
 
     public static GiveModeAction build(String channel, Channel.Mode mode)
     {
-        instance.setText("MODE " + channel + " +" + mode.toString());
+        instance.setText("MODE " + channel + " +" + mode);
         return instance;
     }
 
