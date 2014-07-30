@@ -3,8 +3,9 @@ package net.pslice.archebot;
 import net.pslice.archebot.actions.JoinAction;
 import net.pslice.archebot.actions.NickservAction;
 import net.pslice.archebot.listeners.ConnectionListener;
+import net.pslice.pml.PMLFile;
+import net.pslice.pml.PMLTitle;
 import net.pslice.utilities.FileManager;
-import net.pslice.utilities.PMLFile;
 import net.pslice.utilities.StringUtils;
 
 import java.io.File;
@@ -21,7 +22,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.4";
+    public static final String VERSION = "1.5";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -40,7 +41,7 @@ public class ArcheBot {
     // The format of the date in the bot's output log
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['HH:mm:ss:SSS'] '");
 
-    // The Set of registered event listeners
+    // All registered event listeners
     private final Set<Listener> listeners = new HashSet<>();
 
     // All currently known channels
@@ -52,11 +53,11 @@ public class ArcheBot {
     // All registered commands
     private final HashMap<String, Command> commands = new HashMap<>();
 
-    // The FileManager used for loading/saving files
+    // The file manager used for loading/saving files
     private final FileManager fileManager;
 
     // The PML file containing all bot data
-    private PMLFile properties;
+    private PMLFile data;
 
     // The output stream to log data to
     private PrintStream stream = System.out;
@@ -189,15 +190,16 @@ public class ArcheBot {
                 connection.send("QUIT :" + message, true);
             connectTime = 0;
 
-            properties.removeAll("permissions");
+            data.getSubtitle("permissions").clearSubtitles();
             for (User user : this.getUsers())
             {
+                System.out.println(user.getNick());
                 int i = 1;
                 for (User.Permission permission : user.getPermissions())
                     if (!permission.equals(User.Permission.DEFAULT))
-                        properties.write("permissions." + user.getNick() + "." + i++, "" + permission);
+                        data.getSubtitle("permissions/" + user.getNick() + "/" + i++).setText("" + permission);
             }
-            properties.save();
+            data.save();
 
             users.clear();
             channels.clear();
@@ -253,7 +255,7 @@ public class ArcheBot {
 
     public String getProperty(Property property)
     {
-        return properties.getText(property.toString());
+        return data.getSubtitle("properties/" + property).getText();
     }
 
     public Set<String> getRegisteredCommandIDs()
@@ -338,48 +340,46 @@ public class ArcheBot {
     {
         if (new File(fileManager.getDirectory()).mkdir())
             stream.println("[New directory created]");
-        properties = fileManager.loadPMLFile("bot", 2);
+        data = new PMLFile("bot", fileManager.getDirectory(), 2);
+        PMLTitle properties = data.getSubtitle("properties");
 
-        if (!properties.isTitle("" + Property.nick))
+        if (!properties.isSubtitle("" + Property.nick))
             this.setProperty(Property.nick, "ArcheBot");
-        if (!properties.isTitle("" + Property.login))
+        if (!properties.isSubtitle("" + Property.login))
             this.setProperty(Property.login, "ArcheBot");
-        if (!properties.isTitle("" + Property.realname))
+        if (!properties.isSubtitle("" + Property.realname))
             this.setProperty(Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
-        if (!properties.isTitle("" + Property.server))
+        if (!properties.isSubtitle("" + Property.server))
             this.setProperty(Property.server, "irc.esper.net");
-        if (!properties.isTitle("" + Property.serverPass))
+        if (!properties.isSubtitle("" + Property.serverPass))
             this.setProperty(Property.serverPass, "");
-        if (!properties.isTitle("" + Property.port))
+        if (!properties.isSubtitle("" + Property.port))
             this.setProperty(Property.port, 6667);
-        if (!properties.isTitle("" + Property.messageDelay))
+        if (!properties.isSubtitle("" + Property.messageDelay))
             this.setProperty(Property.messageDelay, 1000);
-        if (!properties.isTitle("" + Property.nickservID))
+        if (!properties.isSubtitle("" + Property.nickservID))
             this.setProperty(Property.nickservID, "");
-        if (!properties.isTitle("" + Property.nickservPass))
+        if (!properties.isSubtitle("" + Property.nickservPass))
             this.setProperty(Property.nickservPass, "");
-        if (!properties.isTitle("" + Property.prefix))
+        if (!properties.isSubtitle("" + Property.prefix))
             this.setProperty(Property.prefix, "+");
-        if (!properties.isTitle("" + Property.channels))
+        if (!properties.isSubtitle("" + Property.channels))
             this.setProperty(Property.channels, "#PotatoBot");
-        if (!properties.isTitle("" + Property.verbose))
+        if (!properties.isSubtitle("" + Property.verbose))
             this.setProperty(Property.verbose, true);
-        if (!properties.isTitle("" + Property.rename))
+        if (!properties.isSubtitle("" + Property.rename))
             this.setProperty(Property.rename, false);
-        if (!properties.isTitle("" + Property.reconnect))
+        if (!properties.isSubtitle("" + Property.reconnect))
             this.setProperty(Property.reconnect, false);
 
         for (User user : this.getUsers())
             user.resetPermissions();
 
-        if (!properties.isTitle("permissions"))
-            properties.write("permissions", "");
+        for (PMLTitle title : data.getSubtitle("permissions").getSubtitles())
+            for (PMLTitle subtitle : title.getSubtitles())
+                this.getUser(title.getTitle()).givePermission(User.Permission.generate(subtitle.getText()));
 
-        for (String nick : properties.getSubtitles("permissions"))
-            for (String p : properties.getSubtitles(nick))
-                this.getUser(properties.getOriginalTitle(nick)).givePermission(User.Permission.generate(properties.getText(p)));
-
-        properties.save();
+        data.save();
     }
 
     public void send(IrcAction action)
@@ -397,7 +397,7 @@ public class ArcheBot {
 
     public void setProperty(Property property, String value)
     {
-        properties.write("" + property, value);
+        data.getSubtitle("properties/" + property).setText(value);
     }
 
     public void setProperty(Property property, int value)
@@ -531,7 +531,7 @@ public class ArcheBot {
         @Override
         public String toString()
         {
-            return "properties." + string;
+            return string;
         }
 
         /*
@@ -543,7 +543,7 @@ public class ArcheBot {
         public static Property getProperty(String string)
         {
             for (Property property : Property.values())
-                if (property.string.equals(string) || property.toString().equals(string))
+                if (property.string.equals(string))
                     return property;
             return null;
         }

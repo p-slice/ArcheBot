@@ -134,6 +134,12 @@ final class Connection {
                     ((PingListener) listener).onPing(bot);
         }
 
+        else if (line.startsWith("ERROR"))
+        {
+            active = false;
+            bot.disconnect(line.substring(7), StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.reconnect)));
+        }
+
         else
         {
             String[] lineSplit = line.split(" ");
@@ -210,49 +216,11 @@ final class Connection {
                     this.E352(lineSplit);
                     break;
 
-                case "001":
-                case "002":
-                case "003":
-                case "004":
-                case "005":
-                case "250":
-                case "251":
-                case "252":
-                case "254":
-                case "255":
-                case "265":
-                case "266":
-                case "301":
-                case "307":
-                case "315":
-                case "317":
-                case "318":
-                case "319":
-                case "321":
-                case "323":
-                case "329":
-                case "330":
-                case "353":
-                case "366":
-                case "372":
-                case "375":
-                case "376":
-                    break;
-
                 default:
-                    if (lineSplit[1].matches("[45]\\d\\d"))
-                    {
-                        for (Listener listener : bot.getListeners())
-                            if (listener instanceof RawListener)
-                                ((RawListener) listener).onServerError(bot, lineSplit[2], StringUtils.compact(lineSplit, 3).substring(1));
-                    }
-
-                    else
-                    {
-                        for (Listener listener : bot.getListeners())
-                            if (listener instanceof RawListener)
-                                ((RawListener) listener).onUnknownLine(bot, line);
-                    }
+                    int ID = Integer.parseInt(lineSplit[1]);
+                    for (Listener listener : bot.getListeners())
+                        if (listener instanceof RawListener)
+                            ((RawListener) listener).onLine(bot, ID, line.substring(line.indexOf("" + ID) + 4));
                     break;
             }
         }
@@ -439,43 +407,62 @@ final class Connection {
         {
             for (char ID : modes)
             {
-                Channel.Mode mode = Channel.Mode.getMode(ID);
+                Mode mode = Mode.getMode(ID);
                 if (added)
                 {
                     channel.addMode(mode);
                     for (Listener listener : bot.getListeners())
-                        if (listener instanceof ChannelModeListener)
-                            ((ChannelModeListener) listener).onChannelModeSet(bot, channel, source, mode);
+                        if (listener instanceof ModeListener)
+                            ((ModeListener) listener).onModeSet(bot, channel, source, mode);
                 }
                 else
                 {
                     channel.removeMode(mode);
                     for (Listener listener : bot.getListeners())
-                        if (listener instanceof ChannelModeListener)
-                            ((ChannelModeListener) listener).onChannelModeRemoved(bot, channel, source, mode);
+                        if (listener instanceof ModeListener)
+                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode);
                 }
             }
         }
 
         else if (lineSplit.length == 5)
         {
-            User user = bot.getUser(lineSplit[4]);
             for (char ID : modes)
             {
-                User.Mode mode = User.Mode.getMode(ID);
-                if (added)
+                Mode mode = Mode.getMode(ID);
+                if (mode instanceof Mode.UserMode)
                 {
-                    channel.addMode(user, mode);
-                    for (Listener listener : bot.getListeners())
-                        if (listener instanceof UserModeListener)
-                            ((UserModeListener) listener).onUserModeSet(bot, channel, source, user, mode);
+                    User user = bot.getUser(lineSplit[4]);
+                    if (added)
+                    {
+                        channel.addMode(user, (Mode.UserMode) mode);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.UserMode) mode);
+                    }
+                    else
+                    {
+                        channel.removeMode(user, (Mode.UserMode) mode);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.UserMode) mode);
+                    }
                 }
+
+                else if (added)
+                {
+                    channel.addMode(mode, lineSplit[4]);
+                    for (Listener listener : bot.getListeners())
+                        if (listener instanceof ModeListener)
+                            ((ModeListener) listener).onModeSet(bot, channel, source, mode, lineSplit[4]);
+                }
+
                 else
                 {
-                    channel.removeMode(user, mode);
+                    channel.removeMode(mode, lineSplit[4]);
                     for (Listener listener : bot.getListeners())
-                        if (listener instanceof UserModeListener)
-                            ((UserModeListener) listener).onUserModeRemoved(bot, channel, source, user, mode);
+                        if (listener instanceof ModeListener)
+                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, lineSplit[4]);
                 }
             }
         }
@@ -538,28 +525,28 @@ final class Connection {
             switch (c)
             {
                 case '~':
-                    if (!channel.hasMode(user, User.Mode.owner))
-                        channel.addMode(user, User.Mode.owner);
+                    if (!channel.hasMode(user, Mode.owner))
+                        channel.addMode(user, Mode.owner);
                     break;
 
                 case '&':
-                    if (!channel.hasMode(user, User.Mode.superOp))
-                        channel.addMode(user, User.Mode.superOp);
+                    if (!channel.hasMode(user, Mode.superOp))
+                        channel.addMode(user, Mode.superOp);
                     break;
 
                 case '@':
-                    if (!channel.hasMode(user, User.Mode.op))
-                        channel.addMode(user, User.Mode.op);
+                    if (!channel.hasMode(user, Mode.op))
+                        channel.addMode(user, Mode.op);
                     break;
 
                 case '%':
-                    if (!channel.hasMode(user, User.Mode.halfOp))
-                        channel.addMode(user, User.Mode.halfOp);
+                    if (!channel.hasMode(user, Mode.halfOp))
+                        channel.addMode(user, Mode.halfOp);
                     break;
 
                 case '+':
-                    if (!channel.hasMode(user, User.Mode.voice))
-                        channel.addMode(user, User.Mode.voice);
+                    if (!channel.hasMode(user, Mode.voice))
+                        channel.addMode(user, Mode.voice);
                     break;
 
                 default:
@@ -572,7 +559,7 @@ final class Connection {
         Channel channel = bot.getChannel(lineSplit[3]);
 
         for (char ID : lineSplit[4].substring(1).toCharArray())
-            channel.addMode(Channel.Mode.getMode(ID));
+            channel.addMode(Mode.getMode(ID));
     }
 
     private void E311(String[] lineSplit)

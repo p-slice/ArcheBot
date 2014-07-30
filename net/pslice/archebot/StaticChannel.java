@@ -19,11 +19,17 @@ public class StaticChannel {
                          topic,
                          topicSetter;
 
-    // Users in the channel
-    private final HashMap<StaticUser, Set<User.Mode>> users = new HashMap<>();
+    // All users in the channel, and their ranks
+    private final HashMap<User, Set<Mode.UserMode>> users = new HashMap<>();
 
-    // Current channel modes
-    private final Set<Channel.Mode> modes;
+    // All basic (0 args) modes
+    private final Set<Mode.BasicMode> basicModes;
+
+    // All simple (1 arg) modes
+    private final HashMap<Mode.SimpleMode, String> simpleModes = new HashMap<>();
+
+    // All complex (1+ args) modes
+    private final HashMap<Mode.ComplexMode, Set<String>> complexModes = new HashMap<>();
 
     /*
      * =======================================
@@ -33,12 +39,17 @@ public class StaticChannel {
 
     StaticChannel(Channel channel)
     {
-        name = channel.name;
-        topic = channel.getTopic();
-        topicSetter = channel.getTopicSetter();
+        this.name = channel.name;
+        this.topic = channel.getTopic();
+        this.topicSetter = channel.getTopicSetter();
+        this.basicModes = channel.getBasicModes();
+        for (Mode.SimpleMode mode : channel.getSimpleModes())
+            simpleModes.put(mode, channel.getArgs(mode));
+        complexModes.put(Mode.ban, channel.getArgs(Mode.ban));
+        complexModes.put(Mode.exempt, channel.getArgs(Mode.exempt));
+        complexModes.put(Mode.invited, channel.getArgs(Mode.invited));
         for (User user : channel.getUsers())
-            users.put(user.toStaticUser(), channel.getModes(user));
-        modes = channel.getModes();
+            users.put(user, channel.getModes(user));
     }
 
     /*
@@ -52,12 +63,38 @@ public class StaticChannel {
         return users.containsKey(user);
     }
 
-    public Set<Channel.Mode> getModes()
+    public String getArgs(Mode mode)
     {
-        return new HashSet<>(modes);
+        if (!(mode instanceof Mode.SimpleMode))
+            throw new IllegalArgumentException("Mode must be instance of SimpleMode");
+        return simpleModes.containsKey(mode) ? simpleModes.get(mode) : "";
     }
 
-    public Set<User.Mode> getModes(StaticUser user)
+    public Set<String> getArgSet(Mode mode)
+    {
+        if (!(mode instanceof Mode.ComplexMode))
+            throw new IllegalArgumentException("Mode must be instance of ComplexMode");
+        return complexModes.get(mode);
+    }
+
+    public boolean isArg(Mode mode, String args)
+    {
+        if (!(mode instanceof Mode.ComplexMode))
+            throw new IllegalArgumentException("Mode must be instance of ComplexMode");
+        return complexModes.get(mode).contains(args);
+    }
+
+    public Set<Mode.BasicMode> getBasicModes()
+    {
+        return new HashSet<>(basicModes);
+    }
+
+    public Set<Mode.SimpleMode> getSimpleModes()
+    {
+        return new HashSet<>(simpleModes.keySet());
+    }
+
+    public Set<Mode.UserMode> getModes(User user)
     {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
     }
@@ -77,29 +114,38 @@ public class StaticChannel {
         return topicSetter;
     }
 
-    public Set<StaticUser> getUsers()
+    public Set<User> getUsers()
     {
         return new HashSet<>(users.keySet());
     }
 
-    public Set<StaticUser> getUsers(User.Mode mode)
+    public Set<User> getUsers(Mode mode)
     {
-        Set<StaticUser> modeUsers = new HashSet<>();
+        if (!(mode instanceof Mode.UserMode))
+            throw new IllegalArgumentException("Mode must be instance of UserMode");
+        Set<User> modeUsers = new HashSet<>();
 
-        for (StaticUser user : users.keySet())
+        for (User user : users.keySet())
             if (users.get(user).contains(mode))
                 modeUsers.add(user);
 
         return modeUsers;
     }
 
-    public boolean hasMode(Channel.Mode mode)
+    public boolean hasMode(Mode mode)
     {
-        return modes.contains(mode);
+        if (mode instanceof Mode.BasicMode)
+            return basicModes.contains(mode);
+        else if (mode instanceof Mode.SimpleMode)
+            return simpleModes.containsKey(mode);
+        else
+            throw new IllegalArgumentException("Mode must be instance of BasicMode or SimpleMode");
     }
 
-    public boolean hasMode(StaticUser user, User.Mode mode)
+    public boolean hasMode(User user, Mode mode)
     {
+        if (!(mode instanceof Mode.UserMode))
+            throw new IllegalArgumentException("Mode must be instance of UserMode");
         return users.containsKey(user) && users.get(user).contains(mode);
     }
 
@@ -108,10 +154,10 @@ public class StaticChannel {
         return users.size();
     }
 
-    public int totalUsers(User.Mode mode)
+    public int totalUsers(Mode mode)
     {
         int size = 0;
-        for (StaticUser user : users.keySet())
+        for (User user : users.keySet())
             if (this.hasMode(user, mode))
                 size++;
         return size;
@@ -119,7 +165,7 @@ public class StaticChannel {
 
     /*
      * =======================================
-     * Overridden methods
+     * Overridden methods:
      * =======================================
      */
 
@@ -128,13 +174,15 @@ public class StaticChannel {
     {
         int i;
         return  name +
-                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes, 0, "") + "}" : "") +
-                ((i = totalUsers(User.Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
-                " {TOTAL USERS:" + totalUsers() + "}";
+                (basicModes.size() > 0 ? " {MODES:" + StringUtils.compact(basicModes, 0, "")
+                        + ":" + StringUtils.compact(simpleModes.keySet()) + "}" : "") +
+                ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
+                " {TOTAL USERS:" + totalUsers() + "}" +
+                " {TOPIC:" + topic + "}";
     }
 
     @Override

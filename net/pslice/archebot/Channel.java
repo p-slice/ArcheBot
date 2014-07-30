@@ -22,10 +22,16 @@ public class Channel {
                    topicSetter = "";
 
     // All users in the channel, and their ranks
-    private final HashMap<User, Set<User.Mode>> users = new HashMap<>();
+    private final HashMap<User, Set<Mode.UserMode>> users = new HashMap<>();
 
-    // The current modes set on the channel
-    private final Set<Mode> modes = new HashSet<>();
+    // All basic (0 args) modes
+    private final Set<Mode.BasicMode> basicModes = new HashSet<>();
+
+    // All simple (1 arg) modes
+    private final HashMap<Mode.SimpleMode, String> simpleModes = new HashMap<>();
+
+    // All complex (1+ args) modes
+    private final HashMap<Mode.ComplexMode, Set<String>> complexModes = new HashMap<>();
 
     /*
      * =======================================
@@ -36,6 +42,9 @@ public class Channel {
     Channel(String name)
     {
         this.name = name;
+        complexModes.put(Mode.ban, new HashSet<String>());
+        complexModes.put(Mode.exempt, new HashSet<String>());
+        complexModes.put(Mode.invited, new HashSet<String>());
     }
 
     /*
@@ -49,12 +58,32 @@ public class Channel {
         return users.containsKey(user);
     }
 
-    public Set<Mode> getModes()
+    public String getArgs(Mode.SimpleMode mode)
     {
-        return new HashSet<>(modes);
+        return simpleModes.containsKey(mode) ? simpleModes.get(mode) : "";
     }
 
-    public Set<User.Mode> getModes(User user)
+    public Set<String> getArgs(Mode.ComplexMode mode)
+    {
+        return complexModes.get(mode);
+    }
+
+    public boolean isArg(Mode.ComplexMode mode, String args)
+    {
+        return complexModes.get(mode).contains(args);
+    }
+
+    public Set<Mode.BasicMode> getBasicModes()
+    {
+        return new HashSet<>(basicModes);
+    }
+
+    public Set<Mode.SimpleMode> getSimpleModes()
+    {
+        return new HashSet<>(simpleModes.keySet());
+    }
+
+    public Set<Mode.UserMode> getModes(User user)
     {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
     }
@@ -79,7 +108,7 @@ public class Channel {
         return new HashSet<>(users.keySet());
     }
 
-    public Set<User> getUsers(User.Mode mode)
+    public Set<User> getUsers(Mode.UserMode mode)
     {
         Set<User> modeUsers = new HashSet<>();
 
@@ -92,10 +121,15 @@ public class Channel {
 
     public boolean hasMode(Mode mode)
     {
-        return modes.contains(mode);
+        if (mode instanceof Mode.BasicMode)
+            return basicModes.contains(mode);
+        else if (mode instanceof Mode.SimpleMode)
+            return simpleModes.containsKey(mode);
+        else
+            throw new IllegalArgumentException("Mode must be instance of BasicMode or SimpleMode");
     }
 
-    public boolean hasMode(User user, User.Mode mode)
+    public boolean hasMode(User user, Mode.UserMode mode)
     {
         return users.containsKey(user) && users.get(user).contains(mode);
     }
@@ -105,7 +139,7 @@ public class Channel {
         return users.size();
     }
 
-    public int totalUsers(User.Mode mode)
+    public int totalUsers(Mode.UserMode mode)
     {
         int size = 0;
             for (User user : users.keySet())
@@ -130,13 +164,15 @@ public class Channel {
     {
         int i;
         return  name +
-                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes, 0, "") + "}" : "") +
-                ((i = totalUsers(User.Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
-                ((i = totalUsers(User.Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
-                " {TOTAL USERS:" + totalUsers() + "}";
+                (basicModes.size() > 0 ? " {MODES:" + (basicModes.size() > 0 ? StringUtils.compact(basicModes, 0, "") : "NONE")
+                        + ":" + (simpleModes.keySet().size() > 0 ? StringUtils.compact(simpleModes.keySet(), 0, "") : "NONE") + "}" : "") +
+                ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
+                ((i = totalUsers(Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
+                " {TOTAL USERS:" + totalUsers() + "}" +
+                " {TOPIC:" + topic + "}";
     }
 
     /*
@@ -147,7 +183,7 @@ public class Channel {
 
     void addUser(User user)
     {
-        users.put(user, new HashSet<User.Mode>());
+        users.put(user, new HashSet<Mode.UserMode>());
     }
 
     void removeUser(User user)
@@ -155,24 +191,42 @@ public class Channel {
         users.remove(user);
     }
 
-    void addMode(User user, User.Mode mode)
+    void addMode(User user, Mode.UserMode mode)
     {
         users.get(user).add(mode);
     }
 
-    void removeMode(User user, User.Mode mode)
+    void removeMode(User user, Mode.UserMode mode)
     {
         users.get(user).remove(mode);
     }
 
     void addMode(Mode mode)
     {
-        modes.add(mode);
+        if (mode instanceof Mode.BasicMode)
+            basicModes.add((Mode.BasicMode) mode);
+    }
+
+    void addMode(Mode mode, String args)
+    {
+        if (mode instanceof Mode.SimpleMode)
+            simpleModes.put((Mode.SimpleMode) mode, args);
+        else if (mode instanceof Mode.ComplexMode)
+            complexModes.get(mode).add(args);
     }
 
     void removeMode(Mode mode)
     {
-        modes.remove(mode);
+        if (mode instanceof Mode.BasicMode)
+            basicModes.remove(mode);
+        else if (mode instanceof Mode.SimpleMode)
+            simpleModes.remove(mode);
+    }
+
+    void removeMode(Mode mode, String args)
+    {
+        if (mode instanceof Mode.ComplexMode)
+            complexModes.get(mode).remove(args);
     }
 
     void setTopic(String topic)
@@ -183,81 +237,5 @@ public class Channel {
     void setTopicSetter(String topicSetter)
     {
         this.topicSetter = topicSetter;
-    }
-
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static enum Mode
-    {
-        /*
-         * =======================================
-         * Enum values:
-         * =======================================
-         */
-
-        moderated('m'),
-        invite('i'),
-        topicProtection('t'),
-        hidden('p'),
-        secret('s'),
-        noExternalMessages('n'),
-        freeTarget('F'),
-        disableForward('Q'),
-        noCTCP('C'),
-        noColour('c'),
-        opModerated('z'),
-        registeredOnly('r'),
-        freeInvite('g'),
-        permanent('P'),
-        largeList('L');
-
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
-
-        private final char ID;
-
-        /*
-         * =======================================
-         * Constructors:
-         * =======================================
-         */
-
-        Mode(char ID)
-        {
-            this.ID = ID;
-        }
-
-        /*
-         * =======================================
-         * Overridden methods:
-         * =======================================
-         */
-
-        @Override
-        public String toString()
-        {
-            return "" + ID;
-        }
-
-        /*
-         * =======================================
-         * Static methods:
-         * =======================================
-         */
-
-        public static Mode getMode(char ID)
-        {
-            for (Mode mode : Mode.values())
-                if (mode.ID == ID)
-                    return mode;
-            return null;
-        }
     }
 }
