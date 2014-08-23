@@ -402,49 +402,75 @@ final class Connection {
         char[] modes = lineSplit[3].substring(1).toCharArray();
 
         if (lineSplit[3].startsWith(":"))
-            return;
-
-        int i = 4;
-        for (char ID : modes)
         {
-            Mode mode = Mode.getMode(ID);
-            String value = lineSplit.length == i + 1 ? lineSplit[i++] : "";
-
-            if (mode instanceof Mode.TempMode)
+            added = lineSplit[3].startsWith(":+");
+            for (char ID : modes)
             {
-                User user = bot.getUser(value);
+                if (ID == '+' || ID == '-')
+                    continue;
+                User.Mode mode = User.Mode.getMode(ID);
+
                 if (added)
                 {
-                    channel.addMode(user, (Mode.TempMode) mode);
+                    source.addMode(mode);
                     for (Listener listener : bot.getListeners())
-                        if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.TempMode) mode);
+                        if (listener instanceof UserModeListener)
+                            ((UserModeListener) listener).onUserModeSet(bot, source, mode);
                 }
                 else
                 {
-                    channel.removeMode(user, (Mode.TempMode) mode);
+                    source.removeMode(mode);
                     for (Listener listener : bot.getListeners())
-                        if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.TempMode) mode);
+                        if (listener instanceof UserModeListener)
+                            ((UserModeListener) listener).onUserModeRemoved(bot, source, mode);
                 }
             }
+        }
 
-            else
+        else
+        {
+            int i = 4;
+            for (char ID : modes)
             {
-                if (added)
+                Mode mode = Mode.getMode(ID);
+                String value = lineSplit.length == i + 1 ? lineSplit[i++] : "";
+
+                if (mode instanceof Mode.TempMode)
                 {
-                    channel.addMode(mode, value);
-                    for (Listener listener : bot.getListeners())
-                        if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeSet(bot, channel, source, mode, value);
+                    User user = bot.getUser(value);
+                    if (added)
+                    {
+                        channel.addMode(user, (Mode.TempMode) mode);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.TempMode) mode);
+                    }
+                    else
+                    {
+                        channel.removeMode(user, (Mode.TempMode) mode);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.TempMode) mode);
+                    }
                 }
 
                 else
                 {
-                    channel.removeMode(mode, value);
-                    for (Listener listener : bot.getListeners())
-                        if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, value);
+                    if (added)
+                    {
+                        channel.addMode(mode, value);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeSet(bot, channel, source, mode, value);
+                    }
+
+                    else
+                    {
+                        channel.removeMode(mode, value);
+                        for (Listener listener : bot.getListeners())
+                            if (listener instanceof ModeListener)
+                                ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, value);
+                    }
                 }
             }
         }

@@ -22,7 +22,7 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.6";
+    public static final String VERSION = "1.6.1";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -152,9 +152,11 @@ public class ArcheBot extends User {
                 this.log(2, "Disconnected (A fatal exception occurred while connecting | Reconnect: " + reconnect + ")");
                 if (reconnect)
                 {
+                    if (!this.getProperty(Property.reconnectDelay).matches("\\d+"))
+                        this.setProperty(Property.reconnectDelay, 60000);
                     try
                     {
-                        Thread.sleep(60000);
+                        Thread.sleep(Integer.parseInt(this.getProperty(Property.reconnectDelay)));
                     }
 
                     catch (InterruptedException ie)
@@ -362,6 +364,8 @@ public class ArcheBot extends User {
             this.setProperty(Property.rename, false);
         if (!properties.isSubtitle("" + Property.reconnect))
             this.setProperty(Property.reconnect, false);
+        if (!properties.isSubtitle("" + Property.reconnectDelay))
+            this.setProperty(Property.reconnectDelay, 60000);
 
         for (User user : this.getUsers())
             user.resetPermissions();
@@ -482,7 +486,8 @@ public class ArcheBot extends User {
         channels("channels"),
         verbose("verbose"),
         rename("rename"),
-        reconnect("reconnect");
+        reconnect("reconnect"),
+        reconnectDelay("reconnectDelay");
 
         /*
          * =======================================

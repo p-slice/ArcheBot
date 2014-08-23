@@ -22,6 +22,9 @@ public class User {
     // Set of user's permissions
     protected final Set<Permission> permissions = new HashSet<>();
 
+    // Set of user's modes
+    protected final Set<Mode> modes = new HashSet<>();
+
     /*
      * =======================================
      * Constructors:
@@ -40,9 +43,9 @@ public class User {
      * =======================================
      */
 
-    public String getNick()
+    public String getHostmask()
     {
-        return nick;
+        return hostmask;
     }
 
     public String getLogin()
@@ -50,9 +53,14 @@ public class User {
         return login;
     }
 
-    public String getHostmask()
+    public String getNick()
     {
-        return hostmask;
+        return nick;
+    }
+
+    public Set<Permission> getPermissions()
+    {
+        return new HashSet<>(permissions);
     }
 
     public String getRealname()
@@ -70,19 +78,19 @@ public class User {
         permissions.add(permission);
     }
 
-    public void removePermission(Permission permission)
-    {
-        permissions.remove(permission);
-    }
-
     public boolean hasPermission(Permission permission)
     {
         return permissions.contains(permission);
     }
 
-    public Set<Permission> getPermissions()
+    public boolean hasMode(Mode mode)
     {
-        return new HashSet<>(permissions);
+        return modes.contains(mode);
+    }
+
+    public void removePermission(Permission permission)
+    {
+        permissions.remove(permission);
     }
 
     public void resetPermissions()
@@ -114,9 +122,19 @@ public class User {
      * =======================================
      */
 
-    void setNick(String nick)
+    void addMode(Mode mode)
     {
-        this.nick = nick;
+        modes.add(mode);
+    }
+
+    void removeMode(Mode mode)
+    {
+        modes.remove(mode);
+    }
+
+    void setHostmask(String hostmask)
+    {
+        this.hostmask = hostmask;
     }
 
     void setLogin(String login)
@@ -124,9 +142,9 @@ public class User {
         this.login = login;
     }
 
-    void setHostmask(String hostmask)
+    void setNick(String nick)
     {
-        this.hostmask = hostmask;
+        this.nick = nick;
     }
 
     void setRealname(String realname)
@@ -209,6 +227,67 @@ public class User {
         public static Set<Permission> getAllPermissions()
         {
             return new HashSet<>(permissions.values());
+        }
+    }
+
+    public static enum Mode
+    {
+        /*
+         * =======================================
+         * Enum values:
+         * =======================================
+         */
+
+        away('a'),
+        deaf('D'),
+        invisible('i'),
+        operator('o'),
+        viewWallops('w'),
+        ssl('Z');
+
+        /*
+         * =======================================
+         * Objects and variables:
+         * =======================================
+         */
+
+        private final char ID;
+
+        /*
+         * =======================================
+         * Constructors:
+         * =======================================
+         */
+
+        private Mode(char ID)
+        {
+            this.ID = ID;
+        }
+
+        /*
+         * =======================================
+         * Overridden methods:
+         * =======================================
+         */
+
+        @Override
+        public String toString()
+        {
+            return "" + ID;
+        }
+
+        /*
+         * =======================================
+         * Static methods:
+         * =======================================
+         */
+
+        public static Mode getMode(char ID)
+        {
+            for (Mode mode : Mode.values())
+                if (mode.ID == ID)
+                    return mode;
+            return null;
         }
     }
 }

@@ -58,4 +58,15 @@ public final class RemoveModeAction extends IrcAction {
         instance.setText("MODE " + channel + " " + user + " -" + mode);
         return instance;
     }
+
+    public static RemoveModeAction build(User user, User.Mode mode)
+    {
+        return build(user.getNick(), mode);
+    }
+
+    public static RemoveModeAction build(String user, User.Mode mode)
+    {
+        instance.setText("MODE " + user + " -" + mode);
+        return instance;
+    }
 }
