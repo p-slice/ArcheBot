@@ -13,7 +13,7 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class ArcheBot {
+public class ArcheBot extends User {
 
     /*
      * =======================================
@@ -22,7 +22,7 @@ public class ArcheBot {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.5";
+    public static final String VERSION = "1.6";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -68,9 +68,6 @@ public class ArcheBot {
     // The time the last connection was formed at, used for calculating uptime
     private long connectTime = 0;
 
-    // The name the bot is known by on the server
-    private String nick = "";
-
     /*
      * =======================================
      * Constructors:
@@ -84,6 +81,7 @@ public class ArcheBot {
 
     public ArcheBot(String directory)
     {
+        super("");
         fileManager = new FileManager(directory);
         this.reload();
 
@@ -150,7 +148,7 @@ public class ArcheBot {
             {
                 boolean reconnect = StringUtils.toBoolean(this.getProperty(Property.reconnect));
 
-                this.log(3, String.format(exception_message, e.toString()));
+                this.log(3, String.format(exception_message, e));
                 this.log(2, "Disconnected (A fatal exception occurred while connecting | Reconnect: " + reconnect + ")");
                 if (reconnect)
                 {
@@ -161,7 +159,7 @@ public class ArcheBot {
 
                     catch (InterruptedException ie)
                     {
-                        this.log(3, String.format(exception_message, ie.toString()));
+                        this.log(3, String.format(exception_message, ie));
                     }
                     this.connect();
                 }
@@ -190,10 +188,12 @@ public class ArcheBot {
                 connection.send("QUIT :" + message, true);
             connectTime = 0;
 
+            connection.close();
+            connection = null;
+
             data.getSubtitle("permissions").clearSubtitles();
             for (User user : this.getUsers())
             {
-                System.out.println(user.getNick());
                 int i = 1;
                 for (User.Permission permission : user.getPermissions())
                     if (!permission.equals(User.Permission.DEFAULT))
@@ -203,10 +203,6 @@ public class ArcheBot {
 
             users.clear();
             channels.clear();
-
-            connection.close();
-            connection = null;
-            nick = "";
 
             this.log(2, "Disconnected (" + message + " | Reconnect: " + reconnect + ")");
 
@@ -246,11 +242,6 @@ public class ArcheBot {
     public Set<Listener> getListeners()
     {
         return new HashSet<>(listeners);
-    }
-
-    public String getNick()
-    {
-        return nick;
     }
 
     public String getProperty(Property property)
@@ -340,7 +331,7 @@ public class ArcheBot {
     {
         if (new File(fileManager.getDirectory()).mkdir())
             stream.println("[New directory created]");
-        data = new PMLFile("bot", fileManager.getDirectory(), 2);
+        data = new PMLFile("bot", fileManager.getDirectory());
         PMLTitle properties = data.getSubtitle("properties");
 
         if (!properties.isSubtitle("" + Property.nick))
@@ -410,11 +401,6 @@ public class ArcheBot {
         this.setProperty(property, "" + value);
     }
 
-    public User toUser()
-    {
-        return this.isConnected() ? this.getUser(nick) : new User(nick);
-    }
-
     /*
      * =======================================
      * Overridden methods:
@@ -426,9 +412,9 @@ public class ArcheBot {
     {
         return String.format("%s {LOGIN:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b} {UPTIME:%d}",
                 nick,
-                this.getProperty(Property.login),
-                this.getProperty(Property.realname),
-                this.getProperty(Property.server),
+                login,
+                realname,
+                server,
                 VERSION,
                 this.isConnected(),
                 this.getUptime());
@@ -444,11 +430,6 @@ public class ArcheBot {
     {
         if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
             stream.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
-    }
-
-    void setNick(String nick)
-    {
-        this.nick = nick;
     }
 
     void addUser(User user)

@@ -26,34 +26,34 @@ public final class RemoveModeAction extends IrcAction {
      * =======================================
      */
 
-    public static RemoveModeAction build(Channel channel, Mode mode)
+    public static RemoveModeAction build(Channel channel, Mode.ValueMode mode)
     {
         return build(channel.name, mode);
     }
 
-    public static RemoveModeAction build(String channel, Mode mode)
+    public static RemoveModeAction build(String channel, Mode.ValueMode mode)
     {
         instance.setText("MODE " + channel + " -" + mode);
         return instance;
     }
 
-    public static RemoveModeAction build(Channel channel, Mode.ComplexMode mode, String args)
+    public static RemoveModeAction build(Channel channel, Mode.PermaMode mode, String value)
     {
-        return build(channel.name, mode, args);
+        return build(channel.name, mode, value);
     }
 
-    public static RemoveModeAction build(String channel, Mode.ComplexMode mode, String args)
+    public static RemoveModeAction build(String channel, Mode.PermaMode mode, String value)
     {
-        instance.setText("MODE " + channel + " -" + mode + " " + args);
+        instance.setText("MODE " + channel + " -" + mode + " " + value);
         return instance;
     }
 
-    public static RemoveModeAction build(Channel channel, User user, Mode.UserMode mode)
+    public static RemoveModeAction build(Channel channel, User user, Mode.TempMode mode)
     {
         return build(channel.name, user.getNick(), mode);
     }
 
-    public static RemoveModeAction build(String channel, String user, Mode.UserMode mode)
+    public static RemoveModeAction build(String channel, String user, Mode.TempMode mode)
     {
         instance.setText("MODE " + channel + " " + user + " -" + mode);
         return instance;

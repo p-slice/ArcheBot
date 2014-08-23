@@ -18,20 +18,17 @@ public class Channel {
     public final String name;
 
     // Information about the channel topic
-    private String topic       = "",
-                   topicSetter = "";
+    protected String topic       = "",
+                     topicSetter = "";
 
     // All users in the channel, and their ranks
-    private final HashMap<User, Set<Mode.UserMode>> users = new HashMap<>();
+    protected final HashMap<User, Set<Mode.TempMode>> users = new HashMap<>();
 
-    // All basic (0 args) modes
-    private final Set<Mode.BasicMode> basicModes = new HashSet<>();
+    // All normal modes
+    protected final HashMap<Mode.ValueMode, String> modes = new HashMap<>();
 
-    // All simple (1 arg) modes
-    private final HashMap<Mode.SimpleMode, String> simpleModes = new HashMap<>();
-
-    // All complex (1+ args) modes
-    private final HashMap<Mode.ComplexMode, Set<String>> complexModes = new HashMap<>();
+    // All permanent modes
+    protected final HashMap<Mode.PermaMode, Set<String>> permaModes = new HashMap<>();
 
     /*
      * =======================================
@@ -42,9 +39,9 @@ public class Channel {
     Channel(String name)
     {
         this.name = name;
-        complexModes.put(Mode.ban, new HashSet<String>());
-        complexModes.put(Mode.exempt, new HashSet<String>());
-        complexModes.put(Mode.invited, new HashSet<String>());
+        permaModes.put(Mode.ban, new HashSet<String>());
+        permaModes.put(Mode.exempt, new HashSet<String>());
+        permaModes.put(Mode.invited, new HashSet<String>());
     }
 
     /*
@@ -58,32 +55,27 @@ public class Channel {
         return users.containsKey(user);
     }
 
-    public String getArgs(Mode.SimpleMode mode)
+    public String getValue(Mode.ValueMode mode)
     {
-        return simpleModes.containsKey(mode) ? simpleModes.get(mode) : "";
+        return modes.containsKey(mode) ? modes.get(mode) : "";
     }
 
-    public Set<String> getArgs(Mode.ComplexMode mode)
+    public Set<String> getValues(Mode.PermaMode mode)
     {
-        return complexModes.get(mode);
+        return permaModes.get(mode);
     }
 
-    public boolean isArg(Mode.ComplexMode mode, String args)
+    public boolean isArg(Mode.PermaMode mode, String args)
     {
-        return complexModes.get(mode).contains(args);
+        return permaModes.get(mode).contains(args);
     }
 
-    public Set<Mode.BasicMode> getBasicModes()
+    public Set<Mode.ValueMode> getModes()
     {
-        return new HashSet<>(basicModes);
+        return new HashSet<>(modes.keySet());
     }
 
-    public Set<Mode.SimpleMode> getSimpleModes()
-    {
-        return new HashSet<>(simpleModes.keySet());
-    }
-
-    public Set<Mode.UserMode> getModes(User user)
+    public Set<Mode.TempMode> getModes(User user)
     {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
     }
@@ -108,7 +100,7 @@ public class Channel {
         return new HashSet<>(users.keySet());
     }
 
-    public Set<User> getUsers(Mode.UserMode mode)
+    public Set<User> getUsers(Mode.TempMode mode)
     {
         Set<User> modeUsers = new HashSet<>();
 
@@ -119,17 +111,12 @@ public class Channel {
         return modeUsers;
     }
 
-    public boolean hasMode(Mode mode)
+    public boolean hasMode(Mode.ValueMode mode)
     {
-        if (mode instanceof Mode.BasicMode)
-            return basicModes.contains(mode);
-        else if (mode instanceof Mode.SimpleMode)
-            return simpleModes.containsKey(mode);
-        else
-            throw new IllegalArgumentException("Mode must be instance of BasicMode or SimpleMode");
+        return modes.containsKey(mode);
     }
 
-    public boolean hasMode(User user, Mode.UserMode mode)
+    public boolean hasMode(User user, Mode.TempMode mode)
     {
         return users.containsKey(user) && users.get(user).contains(mode);
     }
@@ -139,7 +126,7 @@ public class Channel {
         return users.size();
     }
 
-    public int totalUsers(Mode.UserMode mode)
+    public int totalUsers(Mode.TempMode mode)
     {
         int size = 0;
             for (User user : users.keySet())
@@ -164,8 +151,7 @@ public class Channel {
     {
         int i;
         return  name +
-                (basicModes.size() > 0 ? " {MODES:" + (basicModes.size() > 0 ? StringUtils.compact(basicModes, 0, "") : "NONE")
-                        + ":" + (simpleModes.keySet().size() > 0 ? StringUtils.compact(simpleModes.keySet(), 0, "") : "NONE") + "}" : "") +
+                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") : "") +
                 ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
                 ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
                 ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
@@ -183,7 +169,7 @@ public class Channel {
 
     void addUser(User user)
     {
-        users.put(user, new HashSet<Mode.UserMode>());
+        users.put(user, new HashSet<Mode.TempMode>());
     }
 
     void removeUser(User user)
@@ -191,42 +177,30 @@ public class Channel {
         users.remove(user);
     }
 
-    void addMode(User user, Mode.UserMode mode)
+    void addMode(User user, Mode.TempMode mode)
     {
         users.get(user).add(mode);
     }
 
-    void removeMode(User user, Mode.UserMode mode)
+    void removeMode(User user, Mode.TempMode mode)
     {
         users.get(user).remove(mode);
     }
 
-    void addMode(Mode mode)
+    void addMode(Mode mode, String value)
     {
-        if (mode instanceof Mode.BasicMode)
-            basicModes.add((Mode.BasicMode) mode);
-    }
-
-    void addMode(Mode mode, String args)
-    {
-        if (mode instanceof Mode.SimpleMode)
-            simpleModes.put((Mode.SimpleMode) mode, args);
-        else if (mode instanceof Mode.ComplexMode)
-            complexModes.get(mode).add(args);
-    }
-
-    void removeMode(Mode mode)
-    {
-        if (mode instanceof Mode.BasicMode)
-            basicModes.remove(mode);
-        else if (mode instanceof Mode.SimpleMode)
-            simpleModes.remove(mode);
+        if (mode instanceof Mode.ValueMode)
+            modes.put((Mode.ValueMode) mode, value);
+        else if (mode instanceof Mode.PermaMode)
+            permaModes.get(mode).add(value);
     }
 
     void removeMode(Mode mode, String args)
     {
-        if (mode instanceof Mode.ComplexMode)
-            complexModes.get(mode).remove(args);
+        if (mode instanceof Mode.ValueMode)
+            modes.remove(mode);
+        else if (mode instanceof Mode.PermaMode)
+            permaModes.get(mode).remove(args);
     }
 
     void setTopic(String topic)

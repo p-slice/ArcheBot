@@ -111,7 +111,7 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
                 parameters,
                 description,
                 enabled,
-                IDs.length > 0 ? StringUtils.compact(IDs, 0, ", ") : "None");
+                IDs.length > 0 ? StringUtils.compact(IDs, 0, ",") : "None");
     }
 
     @SuppressWarnings("NullableProblems")

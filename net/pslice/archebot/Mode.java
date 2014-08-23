@@ -12,40 +12,38 @@ public class Mode {
 
     private static final HashMap<Character, Mode> modes = new HashMap<>();
 
-    public static final UserMode
-        owner   = new UserMode('q'),
-        superOp = new UserMode('a'),
-        op      = new UserMode('o'),
-        halfOp  = new UserMode('h'),
-        voice   = new UserMode('v');
+    public static final TempMode
+            owner   = new TempMode('q'),
+            superOp = new TempMode('a'),
+            op      = new TempMode('o'),
+            halfOp  = new TempMode('h'),
+            voice   = new TempMode('v');
 
-    public static final BasicMode
-        noCTCP             = new BasicMode('C'),
-        noColor            = new BasicMode('c'),
-        opModerated        = new BasicMode('z'),
-        freeTarget         = new BasicMode('F'),
-        disableForward     = new BasicMode('Q'),
-        permanent          = new BasicMode('P'),
-        largeList          = new BasicMode('L'),
-        noExternalMessages = new BasicMode('n'),
-        topicProtection    = new BasicMode('t'),
-        secret             = new BasicMode('s'),
-        hidden             = new BasicMode('h'),
-        moderated          = new BasicMode('m'),
-        inviteOnly         = new BasicMode('i'),
-        registeredOnly     = new BasicMode('r'),
-        freeInvite         = new BasicMode('g');
+    public static final ValueMode
+            noCTCP             = new ValueMode('C'),
+            noColor            = new ValueMode('c'),
+            opModerated        = new ValueMode('z'),
+            freeTarget         = new ValueMode('F'),
+            disableForward     = new ValueMode('Q'),
+            permanent          = new ValueMode('P'),
+            largeList          = new ValueMode('L'),
+            noExternalMessages = new ValueMode('n'),
+            topicProtection    = new ValueMode('t'),
+            secret             = new ValueMode('s'),
+            hidden             = new ValueMode('h'),
+            moderated          = new ValueMode('m'),
+            inviteOnly         = new ValueMode('i'),
+            registeredOnly     = new ValueMode('r'),
+            freeInvite         = new ValueMode('g'),
+            forward            = new ValueMode('f'),
+            key                = new ValueMode('k'),
+            limit              = new ValueMode('l'),
+            joinLimit          = new ValueMode('j');
 
-    public static final SimpleMode
-        forward   = new SimpleMode('f'),
-        key       = new SimpleMode('k'),
-        limit     = new SimpleMode('l'),
-        joinLimit = new SimpleMode('j');
-
-    public static final ComplexMode
-        ban = new ComplexMode('b'),
-        exempt = new ComplexMode('e'),
-        invited = new ComplexMode('I');
+    public static final PermaMode
+            ban     = new PermaMode('b'),
+            exempt  = new PermaMode('e'),
+            invited = new PermaMode('I');
 
     private final char ID;
 
@@ -101,33 +99,25 @@ public class Mode {
      * =======================================
      */
 
-    public static class UserMode extends Mode
+    public static class TempMode extends Mode
     {
-        private UserMode(char ID)
+        private TempMode(char ID)
         {
             super(ID);
         }
     }
 
-    public static class BasicMode extends Mode
+    public static class ValueMode extends Mode
     {
-        private BasicMode(char ID)
+        private ValueMode(char ID)
         {
             super(ID);
         }
     }
 
-    public static class SimpleMode extends Mode
+    public static class PermaMode extends Mode
     {
-        private SimpleMode(char ID)
-        {
-            super(ID);
-        }
-    }
-
-    public static class ComplexMode extends Mode
-    {
-        private ComplexMode(char ID)
+        private PermaMode(char ID)
         {
             super(ID);
         }

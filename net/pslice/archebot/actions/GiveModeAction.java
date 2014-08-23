@@ -26,39 +26,33 @@ public final class GiveModeAction extends IrcAction {
      * =======================================
      */
 
-    public static GiveModeAction build(Channel channel, Mode.BasicMode mode)
+    public static GiveModeAction build(Channel channel, Mode.ValueMode mode)
     {
         return build(channel.name, mode);
     }
 
-    public static GiveModeAction build(String channel, Mode.BasicMode mode)
+    public static GiveModeAction build(String channel, Mode.ValueMode mode)
     {
-        instance.setText("MODE " + channel + " +" + mode);
+        return build(channel, mode, "");
+    }
+
+    public static GiveModeAction build(Channel channel, Mode mode, String value)
+    {
+        return build(channel.name, mode, value);
+    }
+
+    public static GiveModeAction build(String channel, Mode mode, String value)
+    {
+        instance.setText("MODE " + channel + " +" + mode + (value.equals("") ? "" : " " + value));
         return instance;
     }
 
-    public static GiveModeAction build(Channel channel, Mode.SimpleMode mode, String args)
-    {
-        return build(channel.name, mode, args);
-    }
-
-    public static GiveModeAction build(Channel channel, Mode.ComplexMode mode, String args)
-    {
-        return build(channel.name, mode, args);
-    }
-
-    private static GiveModeAction build(String channel, Mode mode, String args)
-    {
-        instance.setText("MODE " + channel + " +" + mode + " " + args);
-        return instance;
-    }
-
-    public static GiveModeAction build(Channel channel, User user, Mode.UserMode mode)
+    public static GiveModeAction build(Channel channel, User user, Mode.TempMode mode)
     {
         return build(channel.name, user.getNick(), mode);
     }
 
-    public static GiveModeAction build(String channel, String user, Mode.UserMode mode)
+    public static GiveModeAction build(String channel, String user, Mode.TempMode mode)
     {
         instance.setText("MODE " + channel + " " + user + " +" + mode);
         return instance;

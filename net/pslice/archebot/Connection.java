@@ -59,7 +59,7 @@ final class Connection {
         bot.log(2, "Connection successful!");
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
         InputThread input = new InputThread(reader);
         output = new OutputThread(writer);
@@ -70,7 +70,6 @@ final class Connection {
         output.sendLine("USER " + login + " 8 * :" + realname);
 
         String message;
-        int tries = 1;
         while ((message = reader.readLine()) != null)
         {
             handleServerLine(message);
@@ -85,7 +84,7 @@ final class Connection {
                 if (StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.rename)))
                 {
                     bot.log(3, "Nick already in use (Trying another one!)");
-                    bot.setNick(nick + tries++);
+                    bot.setNick(nick + "_");
                     output.sendLine("NICK " + bot.getNick());
                 }
 
@@ -97,6 +96,8 @@ final class Connection {
                 throw new ConnectionException(StringUtils.compact(messageSplit, 3).substring(1));
         }
         active = true;
+        if (!bot.isUser(bot.getNick()))
+            bot.addUser(bot);
 
         socket.setSoTimeout(240000);
 
@@ -137,7 +138,7 @@ final class Connection {
         else if (line.startsWith("ERROR"))
         {
             active = false;
-            bot.disconnect(line.substring(7), StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.reconnect)));
+            bot.disconnect(line.substring(7));
         }
 
         else
@@ -337,7 +338,7 @@ final class Connection {
         Channel channel = bot.getChannel(lineSplit[2]);
         channel.addUser(source);
 
-        if (source.equals(bot.toUser()))
+        if (source.equals(bot))
         {
             bot.addChannel(channel);
             bot.send(RawAction.build("WHO " + lineSplit[2]));
@@ -355,7 +356,7 @@ final class Connection {
     private void PART(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
-        if (source.equals(bot.toUser()))
+        if (source.equals(bot))
             bot.removeChannel(channel.name);
         else
             channel.removeUser(source);
@@ -403,66 +404,47 @@ final class Connection {
         if (lineSplit[3].startsWith(":"))
             return;
 
-        if (lineSplit.length == 4)
+        int i = 4;
+        for (char ID : modes)
         {
-            for (char ID : modes)
+            Mode mode = Mode.getMode(ID);
+            String value = lineSplit.length == i + 1 ? lineSplit[i++] : "";
+
+            if (mode instanceof Mode.TempMode)
             {
-                Mode mode = Mode.getMode(ID);
+                User user = bot.getUser(value);
                 if (added)
                 {
-                    channel.addMode(mode);
+                    channel.addMode(user, (Mode.TempMode) mode);
                     for (Listener listener : bot.getListeners())
                         if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeSet(bot, channel, source, mode);
+                            ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.TempMode) mode);
                 }
                 else
                 {
-                    channel.removeMode(mode);
+                    channel.removeMode(user, (Mode.TempMode) mode);
                     for (Listener listener : bot.getListeners())
                         if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode);
+                            ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.TempMode) mode);
                 }
             }
-        }
 
-        else if (lineSplit.length == 5)
-        {
-            for (char ID : modes)
+            else
             {
-                Mode mode = Mode.getMode(ID);
-                if (mode instanceof Mode.UserMode)
+                if (added)
                 {
-                    User user = bot.getUser(lineSplit[4]);
-                    if (added)
-                    {
-                        channel.addMode(user, (Mode.UserMode) mode);
-                        for (Listener listener : bot.getListeners())
-                            if (listener instanceof ModeListener)
-                                ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.UserMode) mode);
-                    }
-                    else
-                    {
-                        channel.removeMode(user, (Mode.UserMode) mode);
-                        for (Listener listener : bot.getListeners())
-                            if (listener instanceof ModeListener)
-                                ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.UserMode) mode);
-                    }
-                }
-
-                else if (added)
-                {
-                    channel.addMode(mode, lineSplit[4]);
+                    channel.addMode(mode, value);
                     for (Listener listener : bot.getListeners())
                         if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeSet(bot, channel, source, mode, lineSplit[4]);
+                            ((ModeListener) listener).onModeSet(bot, channel, source, mode, value);
                 }
 
                 else
                 {
-                    channel.removeMode(mode, lineSplit[4]);
+                    channel.removeMode(mode, value);
                     for (Listener listener : bot.getListeners())
                         if (listener instanceof ModeListener)
-                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, lineSplit[4]);
+                            ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, value);
                 }
             }
         }
@@ -559,7 +541,7 @@ final class Connection {
         Channel channel = bot.getChannel(lineSplit[3]);
 
         for (char ID : lineSplit[4].substring(1).toCharArray())
-            channel.addMode(Mode.getMode(ID));
+            channel.addMode(Mode.getMode(ID), "");
     }
 
     private void E311(String[] lineSplit)
@@ -647,7 +629,7 @@ final class Connection {
          */
 
         // The writer for socket output
-        private final BufferedWriter writer;
+        private final PrintWriter writer;
 
         // The queue of output lines
         Queue<String> queue = new Queue<>();
@@ -658,7 +640,7 @@ final class Connection {
          * =======================================
          */
 
-        OutputThread(BufferedWriter writer)
+        OutputThread(PrintWriter writer)
         {
             this.writer = writer;
         }
@@ -678,8 +660,7 @@ final class Connection {
             {
                 try
                 {
-                    writer.write(line + "\n\r");
-                    writer.flush();
+                    writer.println(line);
                     bot.log(1, line);
                 }
 

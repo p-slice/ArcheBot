@@ -13,14 +13,14 @@ public class User {
      */
 
     // Information about the user
-    private String nick     = "",
-                   login    = "",
-                   hostmask = "",
-                   realname = "",
-                   server   = "";
+    protected String nick     = "",
+                     login    = "",
+                     hostmask = "",
+                     realname = "",
+                     server   = "";
 
     // Set of user's permissions
-    private final Set<Permission> permissions = new HashSet<>();
+    protected final Set<Permission> permissions = new HashSet<>();
 
     /*
      * =======================================
