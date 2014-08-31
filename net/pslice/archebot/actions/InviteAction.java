@@ -8,34 +8,17 @@ public final class InviteAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final InviteAction instance = new InviteAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private InviteAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static InviteAction build(Channel channel, User user)
+    public InviteAction(Channel channel, User user)
     {
-        return build(channel.name, user.getNick());
+        this(channel.name, user.getNick());
     }
 
-    public static InviteAction build(String channel, String user)
+    public InviteAction(String channel, String user)
     {
-        instance.setText("INVITE " + user + " " + channel);
-        return instance;
+        super("INVITE " + user + " " + channel);
     }
 }

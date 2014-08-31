@@ -1,5 +1,8 @@
 package net.pslice.archebot;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class StaticUser {
 
     /*
@@ -15,6 +18,9 @@ public class StaticUser {
                          realname,
                          server;
 
+    // Set of user's modes
+    protected final Set<User.Mode> modes;
+
     /*
      * =======================================
      * Constructors:
@@ -28,6 +34,7 @@ public class StaticUser {
         hostmask = user.getHostmask();
         realname = user.getRealname();
         server = user.getServer();
+        modes = user.getModes();
     }
 
     /*
@@ -36,9 +43,9 @@ public class StaticUser {
      * =======================================
      */
 
-    public String getNick()
+    public String getHostmask()
     {
-        return nick;
+        return hostmask;
     }
 
     public String getLogin()
@@ -46,9 +53,14 @@ public class StaticUser {
         return login;
     }
 
-    public String getHostmask()
+    public Set<User.Mode> getModes()
     {
-        return hostmask;
+        return new HashSet<>(modes);
+    }
+
+    public String getNick()
+    {
+        return nick;
     }
 
     public String getRealname()
@@ -59,6 +71,11 @@ public class StaticUser {
     public String getServer()
     {
         return server;
+    }
+
+    public boolean hasMode(User.Mode mode)
+    {
+        return modes.contains(mode);
     }
 
     /*

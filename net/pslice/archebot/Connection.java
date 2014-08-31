@@ -99,7 +99,9 @@ final class Connection {
         if (!bot.isUser(bot.getNick()))
             bot.addUser(bot);
 
-        socket.setSoTimeout(240000);
+        if (bot.getProperty(ArcheBot.Property.timeoutDelay).matches("\\d+"))
+            bot.setProperty(ArcheBot.Property.timeoutDelay, 240000);
+        socket.setSoTimeout(Integer.parseInt(bot.getProperty(ArcheBot.Property.timeoutDelay)));
 
         input.start();
         output.start();
@@ -190,7 +192,7 @@ final class Connection {
                     break;
 
                 case "311":
-                    this.E311(lineSplit);
+                    this.on311(lineSplit);
                     break;
 
                 case "312":
@@ -198,11 +200,11 @@ final class Connection {
                     break;
 
                 case "322":
-                    this.E322(lineSplit);
+                    this.on322(lineSplit);
                     break;
 
                 case "324":
-                    this.E324(lineSplit);
+                    this.on324(lineSplit);
                     break;
 
                 case "332":
@@ -214,7 +216,7 @@ final class Connection {
                     break;
 
                 case "352":
-                    this.E352(lineSplit);
+                    this.on352(lineSplit);
                     break;
 
                 default:
@@ -296,7 +298,7 @@ final class Connection {
             }
 
             else
-                bot.send(ErrorAction.build(source, String.format("The command ID '%s' is not registered!", ID)));
+                bot.send(new ErrorAction(source, String.format("The command ID '%s' is not registered!", ID)));
         }
 
         else
@@ -341,12 +343,12 @@ final class Connection {
         if (source.equals(bot))
         {
             bot.addChannel(channel);
-            bot.send(RawAction.build("WHO " + lineSplit[2]));
-            bot.send(RawAction.build("MODE " + lineSplit[2]));
+            bot.send(new RawAction("WHO " + lineSplit[2]));
+            bot.send(new RawAction("MODE " + lineSplit[2]));
         }
 
         else
-            bot.send(RawAction.build("WHOIS " + source.getNick()));
+            bot.send(new RawAction("WHOIS " + source.getNick()));
 
         for (Listener listener : bot.getListeners())
             if (listener instanceof JoinListener)
@@ -507,14 +509,14 @@ final class Connection {
                     ((InviteListener) listener).onInvite(bot, bot.getChannel(chan), source);
     }
 
-    private void E322(String[] lineSplit)
+    private void on322(String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[3]);
         if (channel.totalUsers() != Integer.parseInt(lineSplit[4]))
-            bot.send(RawAction.build("WHO " + channel.name));
+            bot.send(new RawAction("WHO " + channel.name));
     }
 
-    private void E352(String[] lineSplit)
+    private void on352(String[] lineSplit)
     {
         User user = bot.getUser(lineSplit[7]);
         if (bot.isUser(lineSplit[7]))
@@ -562,7 +564,7 @@ final class Connection {
             }
     }
 
-    private void E324(String[] lineSplit)
+    private void on324(String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[3]);
 
@@ -570,7 +572,7 @@ final class Connection {
             channel.addMode(Mode.getMode(ID), "");
     }
 
-    private void E311(String[] lineSplit)
+    private void on311(String[] lineSplit)
     {
         User user = bot.getUser(lineSplit[3]);
         user.setLogin(lineSplit[4]);
@@ -658,7 +660,7 @@ final class Connection {
         private final PrintWriter writer;
 
         // The queue of output lines
-        Queue<String> queue = new Queue<>();
+        private final Queue<String> queue = new Queue<>();
 
         /*
          * =======================================
@@ -739,35 +741,15 @@ final class Connection {
 
     static final class ConnectionException extends Exception
     {
-
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
-
-        private final String line;
-
         /*
          * =======================================
          * Constructors:
          * =======================================
          */
 
-        public ConnectionException(String line)
+        private ConnectionException(String cause)
         {
-            this.line = line;
-        }
-
-        /*
-         * =======================================
-         * Local methods:
-         * =======================================
-         */
-
-        String getLine()
-        {
-            return line;
+            super(cause);
         }
     }
 }

@@ -53,6 +53,11 @@ public class User {
         return login;
     }
 
+    public Set<Mode> getModes()
+    {
+        return new HashSet<>(modes);
+    }
+
     public String getNick()
     {
         return nick;

@@ -7,45 +7,27 @@ public final class PartAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final PartAction instance = new PartAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private PartAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static PartAction build(Channel channel)
+    public PartAction(Channel channel)
     {
-        return build(channel.toString());
+        this(channel.name);
     }
 
-    public static PartAction build(Channel channel, String reason)
+    public PartAction(String channel)
     {
-        return build(channel.name, reason);
+        this(channel, "");
     }
 
-    public static PartAction build(String channel)
+    public PartAction(Channel channel, String reason)
     {
-        instance.setText("Part " + channel);
-        return instance;
+        this(channel.name, reason);
     }
 
-    public static PartAction build(String channel, String reason)
+    public PartAction(String channel, String reason)
     {
-        instance.setText("PART " + channel + " :" + reason);
-        return instance;
+        super("PART " + channel + " :" + reason);
     }
 }

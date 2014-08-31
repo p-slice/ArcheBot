@@ -1,16 +1,9 @@
 package net.pslice.archebot.actions;
 
+import net.pslice.archebot.Channel;
 import net.pslice.archebot.IrcAction;
 
 public final class JoinAction extends IrcAction {
-
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final JoinAction instance = new JoinAction();
 
     /*
      * =======================================
@@ -18,17 +11,13 @@ public final class JoinAction extends IrcAction {
      * =======================================
      */
 
-    private JoinAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static JoinAction build(String channel)
+    public JoinAction(Channel channel)
     {
-        instance.setText("JOIN " + channel);
-        return instance;
+        this(channel.name);
+    }
+
+    public JoinAction(String channel)
+    {
+        super("JOIN " + channel);
     }
 }

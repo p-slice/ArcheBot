@@ -8,8 +8,8 @@ public class IrcAction {
      * =======================================
      */
 
-    // The stored message to be sent to the server
-    private String text = "";
+    // The message to be sent to the server
+    private final String line;
 
     /*
      * =======================================
@@ -17,17 +17,9 @@ public class IrcAction {
      * =======================================
      */
 
-    protected IrcAction() {}
-
-    /*
-     * =======================================
-     * Protected methods:
-     * =======================================
-     */
-
-    protected void setText(String text)
+    protected IrcAction(String line)
     {
-        this.text = text;
+        this.line = line;
     }
 
     /*
@@ -39,12 +31,12 @@ public class IrcAction {
     @Override
     public final String toString()
     {
-        return text;
+        return line;
     }
 
     @Override
     public final boolean equals(Object obj)
     {
-        return obj instanceof IrcAction && obj.toString().equals(text);
+        return obj instanceof IrcAction && obj.toString().equals(line);
     }
 }

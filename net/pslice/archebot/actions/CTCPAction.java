@@ -2,16 +2,9 @@ package net.pslice.archebot.actions;
 
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.IrcAction;
+import net.pslice.archebot.User;
 
 public final class CTCPAction extends IrcAction {
-
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final CTCPAction instance = new CTCPAction();
 
     /*
      * =======================================
@@ -19,33 +12,33 @@ public final class CTCPAction extends IrcAction {
      * =======================================
      */
 
-    private CTCPAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static CTCPAction build(Channel channel, String command)
+    public CTCPAction(Channel channel, String command)
     {
-        return build(channel.name, command);
+        this(channel.name, command);
     }
 
-    public static CTCPAction build(String channel, String command)
+    public CTCPAction(User user, String command)
     {
-        instance.setText("PRIVMSG " + channel + " :\u0001" + command.toUpperCase() + "\u0001");
-        return instance;
+        this(user.getNick(), command);
     }
 
-    public static CTCPAction build(Channel channel, String command, String message)
+    public CTCPAction(String target, String command)
     {
-        return build(channel.name, command, message);
+        this(target, command, "");
     }
 
-    public static CTCPAction build(String channel, String command, String message)
+    public CTCPAction(Channel channel, String command, String message)
     {
-        instance.setText("PRIVMSG " + channel + " :\u0001" + command.toUpperCase() + " " + message + "\u0001");
-        return instance;
+        this(channel.name, command, message);
+    }
+
+    public CTCPAction(User user, String command, String message)
+    {
+        this(user.getNick(), command, message);
+    }
+
+    public CTCPAction(String target, String command, String message)
+    {
+        super("PRIVMSG " + target + " :\u0001" + command.toUpperCase() + (message.equals("") ? "" : " " + message) + "\u0001");
     }
 }

@@ -8,39 +8,22 @@ public final class NoticeAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final NoticeAction instance = new NoticeAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private NoticeAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static NoticeAction build(Channel channel, String notice)
+    public NoticeAction(Channel channel, String notice)
     {
-        return build(channel.name, notice);
+        this(channel.name, notice);
     }
 
-    public static NoticeAction build(User user, String notice)
+    public NoticeAction(User user, String notice)
     {
-        return build(user.getNick(), notice);
+        this(user.getNick(), notice);
     }
 
-    public static NoticeAction build(String target, String notice)
+    public NoticeAction(String target, String notice)
     {
-        instance.setText("NOTICE " + target + " :" + notice);
-        return instance;
+        super("NOTICE " + target + " :" + notice);
     }
 }

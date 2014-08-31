@@ -22,7 +22,7 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.6.1";
+    public static final String VERSION = "1.7";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -39,7 +39,7 @@ public class ArcheBot extends User {
     };
 
     // The format of the date in the bot's output log
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("'['HH:mm:ss:SSS'] '");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
 
     // All registered event listeners
     private final Set<Listener> listeners = new HashSet<>();
@@ -125,13 +125,13 @@ public class ArcheBot extends User {
                     if (!this.getProperty(Property.nickservPass).equals(""))
                     {
                         if (this.getProperty(Property.nickservID).equals(""))
-                            this.send(NickservAction.build(this.getProperty(Property.nickservPass)));
+                            this.send(new NickservAction(this.getProperty(Property.nickservPass)));
                         else
-                            this.send(NickservAction.build(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
+                            this.send(new NickservAction(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
                     }
 
                     for (String channel : StringUtils.breakList(this.getProperty(Property.channels)))
-                        this.send(JoinAction.build(channel));
+                        this.send(new JoinAction(channel));
 
                     for (Listener listener : listeners)
                         if (listener instanceof ConnectionListener)
@@ -141,7 +141,7 @@ public class ArcheBot extends User {
 
             catch (Connection.ConnectionException e)
             {
-                this.log(3, "Connection refused (" + e.getLine() + ")");
+                this.log(3, "Connection refused (" + e + ")");
             }
 
             catch (Exception e)
@@ -366,6 +366,8 @@ public class ArcheBot extends User {
             this.setProperty(Property.reconnect, false);
         if (!properties.isSubtitle("" + Property.reconnectDelay))
             this.setProperty(Property.reconnectDelay, 60000);
+        if (!properties.isSubtitle("" + Property.timeoutDelay))
+            this.setProperty(Property.timeoutDelay, 240000);
 
         for (User user : this.getUsers())
             user.resetPermissions();
@@ -482,12 +484,12 @@ public class ArcheBot extends User {
         nickservID("nickservID"),
         nickservPass("nickservPass"),
         prefix("prefix"),
-        operators("operators"),
         channels("channels"),
         verbose("verbose"),
         rename("rename"),
         reconnect("reconnect"),
-        reconnectDelay("reconnectDelay");
+        reconnectDelay("reconnectDelay"),
+        timeoutDelay("timeoutDelay");
 
         /*
          * =======================================

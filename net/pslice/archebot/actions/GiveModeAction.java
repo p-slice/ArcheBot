@@ -6,66 +6,47 @@ public final class GiveModeAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final GiveModeAction instance = new GiveModeAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private GiveModeAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static GiveModeAction build(Channel channel, Mode.ValueMode mode)
+    public GiveModeAction(Channel channel, Mode.ValueMode mode)
     {
-        return build(channel.name, mode);
+        this(channel.name, mode);
     }
 
-    public static GiveModeAction build(String channel, Mode.ValueMode mode)
+    public GiveModeAction(String channel, Mode.ValueMode mode)
     {
-        return build(channel, mode, "");
+        this(channel, mode, "");
     }
 
-    public static GiveModeAction build(Channel channel, Mode mode, String value)
+    public GiveModeAction(Channel channel, Mode mode, String value)
     {
-        return build(channel.name, mode, value);
+        this(channel.name, mode, value);
     }
 
-    public static GiveModeAction build(String channel, Mode mode, String value)
+    public GiveModeAction(String channel, Mode mode, String value)
     {
-        instance.setText("MODE " + channel + " +" + mode + (value.equals("") ? "" : " " + value));
-        return instance;
+        super("MODE " + channel + " +" + mode + (value.equals("") ? "" : " " + value));
     }
 
-    public static GiveModeAction build(Channel channel, User user, Mode.TempMode mode)
+    public GiveModeAction(Channel channel, User user, Mode.TempMode mode)
     {
-        return build(channel.name, user.getNick(), mode);
+        this(channel.name, user.getNick(), mode);
     }
 
-    public static GiveModeAction build(String channel, String user, Mode.TempMode mode)
+    public GiveModeAction(String channel, String user, Mode.TempMode mode)
     {
-        instance.setText("MODE " + channel + " " + user + " +" + mode);
-        return instance;
+        super("MODE " + channel + " " + user + " +" + mode);
     }
 
-    public static GiveModeAction build(User user, User.Mode mode)
+    public GiveModeAction(User user, User.Mode mode)
     {
-        return build(user.getNick(), mode);
+        this(user.getNick(), mode);
     }
 
-    public static GiveModeAction build(String user, User.Mode mode)
+    public GiveModeAction(String user, User.Mode mode)
     {
-        instance.setText("MODE " + user + " +" + mode);
-        return instance;
+        super("MODE " + user + " +" + mode);
     }
 }

@@ -8,45 +8,27 @@ public final class KickAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables
-     * =======================================
-     */
-
-    private static final KickAction instance = new KickAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private KickAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static KickAction build(Channel channel, User user)
+    public KickAction(Channel channel, User user)
     {
-        return build(channel.toString(), user.toString());
+        this(channel.name, user.getNick());
     }
 
-    public static KickAction build(Channel channel, User user, String reason)
+    public KickAction(String channel, String user)
     {
-        return build(channel.name, user.getNick(), reason);
+        this(channel, user, "");
     }
 
-    public static KickAction build(String channel, String user)
+    public KickAction(Channel channel, User user, String reason)
     {
-        instance.setText("KICK " + channel + " " + user);
-        return instance;
+        this(channel.name, user.getNick(), reason);
     }
 
-    public static KickAction build(String channel, String user, String reason)
+    public KickAction(String channel, String user, String reason)
     {
-        instance.setText("KICK " + channel + " " + user +  " :" + reason);
-        return instance;
+        super("KICK " + channel + " " + user +  " :" + reason);
     }
 }

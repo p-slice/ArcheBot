@@ -6,34 +6,17 @@ public final class NickservAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final NickservAction instance = new NickservAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private NickservAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static NickservAction build(String nick, String password)
+    public NickservAction(String nick, String password)
     {
-        return build(nick + " " + password);
+        this(nick + " " + password);
     }
 
-    public static NickservAction build(String password)
+    public NickservAction(String password)
     {
-        instance.setText("NICKSERV IDENTIFY " + password);
-        return instance;
+        super("NICKSERV IDENTIFY " + password);
     }
 }

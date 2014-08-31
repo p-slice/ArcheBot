@@ -7,34 +7,17 @@ public final class ErrorAction  extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final ErrorAction instance = new ErrorAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private ErrorAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static ErrorAction build(User user, String notice)
+    public ErrorAction(User user, String error)
     {
-        return build(user.getNick(), notice);
+        this(user.getNick(), error);
     }
 
-    public static ErrorAction build(String target, String notice)
+    public ErrorAction(String target, String error)
     {
-        instance.setText("NOTICE " + target + " :\u00034Error\u000F: " + notice);
-        return instance;
+        super("NOTICE " + target + " :\u00034Error\u000F: " + error);
     }
 }

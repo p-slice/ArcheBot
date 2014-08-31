@@ -8,39 +8,22 @@ public final class MessageAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final MessageAction instance = new MessageAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private MessageAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static MessageAction build(Channel channel, String message)
+    public MessageAction(Channel channel, String message)
     {
-        return build(channel.name, message);
+        this(channel.name, message);
     }
 
-    public static MessageAction build(User user, String message)
+    public MessageAction(User user, String message)
     {
-        return build(user.getNick(), message);
+        this(user.getNick(), message);
     }
 
-    public static MessageAction build(String target, String message)
+    public MessageAction(String target, String message)
     {
-        instance.setText("PRIVMSG " + target + " :" + message);
-        return instance;
+        super("PRIVMSG " + target + " :" + message);
     }
 }

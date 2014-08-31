@@ -8,39 +8,22 @@ public final class SelfAction extends IrcAction {
 
     /*
      * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    private static final SelfAction instance = new SelfAction();
-
-    /*
-     * =======================================
      * Constructors:
      * =======================================
      */
 
-    private SelfAction() {}
-
-    /*
-     * =======================================
-     * Static methods:
-     * =======================================
-     */
-
-    public static SelfAction build(Channel channel, String action)
+    public SelfAction(Channel channel, String action)
     {
-        return build(channel.name, action);
+        this(channel.name, action);
     }
 
-    public static SelfAction build(User user, String action)
+    public SelfAction(User user, String action)
     {
-        return build(user.getNick(), action);
+        this(user.getNick(), action);
     }
 
-    public static SelfAction build(String target, String action)
+    public SelfAction(String target, String action)
     {
-        instance.setText("PRIVMSG " + target + " :\u0001ACTION " + action + "\u0001");
-        return instance;
+        super("PRIVMSG " + target + " :\u0001ACTION " + action + "\u0001");
     }
 }
