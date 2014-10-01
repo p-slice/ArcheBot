@@ -3,6 +3,7 @@ package net.pslice.archebot;
 import net.pslice.archebot.actions.ErrorAction;
 import net.pslice.archebot.actions.RawAction;
 import net.pslice.archebot.listeners.*;
+import net.pslice.archebot.ArcheBot.Property;
 import net.pslice.utilities.Queue;
 import net.pslice.utilities.StringUtils;
 
@@ -31,7 +32,7 @@ final class Connection {
     private boolean active = false;
 
     // The wait time (in milliseconds) between messages sent to the server
-    private int messageDelay;
+    private final int messageDelay;
 
     /*
      * =======================================
@@ -43,13 +44,13 @@ final class Connection {
     {
         this.bot = bot;
 
-        String nick       = bot.getProperty(ArcheBot.Property.nick),
-               login      = bot.getProperty(ArcheBot.Property.login),
-               realname   = bot.getProperty(ArcheBot.Property.realname).replace("{VERSION}", ArcheBot.VERSION).replace("{UVERSION}", ArcheBot.USER_VERSION),
-               server     = bot.getProperty(ArcheBot.Property.server),
-               serverPass = bot.getProperty(ArcheBot.Property.serverPass);
-        int    port       = Integer.parseInt(bot.getProperty(ArcheBot.Property.port));
-        messageDelay      = Integer.parseInt(bot.getProperty(ArcheBot.Property.messageDelay));
+        String nick       = bot.getProperty(Property.nick),
+               login      = bot.getProperty(Property.login),
+               realname   = bot.getProperty(Property.realname).replace("{VERSION}", ArcheBot.VERSION).replace("{UVERSION}", ArcheBot.USER_VERSION),
+               server     = bot.getProperty(Property.server),
+               serverPass = bot.getProperty(Property.serverPass);
+        int    port       = Integer.parseInt(bot.getProperty(Property.port));
+        messageDelay      = Integer.parseInt(bot.getProperty(Property.messageDelay));
 
         bot.setNick(nick);
         bot.log(2, "Attempting to connect to " + server + " on port " + port + "...");
@@ -81,10 +82,10 @@ final class Connection {
 
             else if (messageSplit[1].equals("433"))
             {
-                if (StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.rename)))
+                if (StringUtils.toBoolean(bot.getProperty(Property.rename)))
                 {
                     bot.log(3, "Nick already in use (Trying another one!)");
-                    bot.setNick(nick + "_");
+                    bot.setNick(nick += "_");
                     output.sendLine("NICK " + bot.getNick());
                 }
 
@@ -99,9 +100,9 @@ final class Connection {
         if (!bot.isUser(bot.getNick()))
             bot.addUser(bot);
 
-        if (bot.getProperty(ArcheBot.Property.timeoutDelay).matches("\\d+"))
-            bot.setProperty(ArcheBot.Property.timeoutDelay, 240000);
-        socket.setSoTimeout(Integer.parseInt(bot.getProperty(ArcheBot.Property.timeoutDelay)));
+        if (bot.getProperty(Property.timeoutDelay).matches("\\d+"))
+            bot.setProperty(Property.timeoutDelay, 240000);
+        socket.setSoTimeout(Integer.parseInt(bot.getProperty(Property.timeoutDelay)));
 
         input.start();
         output.start();
@@ -391,6 +392,8 @@ final class Connection {
 
         if (oldNick.equals(bot.getNick()))
             bot.setNick(newNick);
+        else
+            bot.reload();
 
         for (Listener listener : bot.getListeners())
             if (listener instanceof NickChangeListener)
@@ -501,7 +504,7 @@ final class Connection {
                 ((TopicListener) listener).onTopicSet(bot, channel, source, topic);
     }
 
-    public void INVITE(User source, String[] lineSplit)
+    private void INVITE(User source, String[] lineSplit)
     {
         for (String chan : StringUtils.compact(lineSplit, 3).substring(1).split(" "))
             for (Listener listener : bot.getListeners())
@@ -567,7 +570,6 @@ final class Connection {
     private void on324(String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[3]);
-
         for (char ID : lineSplit[4].substring(1).toCharArray())
             channel.addMode(Mode.getMode(ID), "");
     }

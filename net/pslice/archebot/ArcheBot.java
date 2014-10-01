@@ -22,7 +22,7 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.7";
+    public static final String VERSION = "1.7.1";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -31,7 +31,7 @@ public class ArcheBot extends User {
     static final String exception_message = "An internal exception has occurred (%s)";
 
     // Symbols to indicate the type of message being logged
-    private static final String[] msgTypes = {
+    private static final String[] logTypes = {
             "<- ",
             "-> ",
             "<> ",
@@ -379,6 +379,11 @@ public class ArcheBot extends User {
         data.save();
     }
 
+    public void saveProperties()
+    {
+        data.save();
+    }
+
     public void send(IrcAction action)
     {
         if (this.isConnected())
@@ -392,19 +397,21 @@ public class ArcheBot extends User {
         this.stream = stream;
     }
 
-    public void setProperty(Property property, String value)
+    public String setProperty(Property property, String value)
     {
-        data.getSubtitle("properties/" + property).setText(value);
+        return data.getSubtitle("properties/" + property).setText(value);
     }
 
-    public void setProperty(Property property, int value)
+    public int setProperty(Property property, int value)
     {
         this.setProperty(property, "" + value);
+        return value;
     }
 
-    public void setProperty(Property property, boolean value)
+    public boolean setProperty(Property property, boolean value)
     {
         this.setProperty(property, "" + value);
+        return value;
     }
 
     /*
@@ -435,7 +442,7 @@ public class ArcheBot extends User {
     synchronized void log(int msgType, String line)
     {
         if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
-            stream.println(dateFormat.format(new Date()) + msgTypes[msgType] + line);
+            stream.println(dateFormat.format(new Date()) + logTypes[msgType] + line);
     }
 
     void addUser(User user)

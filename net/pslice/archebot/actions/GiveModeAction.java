@@ -37,7 +37,7 @@ public final class GiveModeAction extends IrcAction {
 
     public GiveModeAction(String channel, String user, Mode.TempMode mode)
     {
-        super("MODE " + channel + " " + user + " +" + mode);
+        super("MODE " + channel + " +" + mode + " " + user);
     }
 
     public GiveModeAction(User user, User.Mode mode)

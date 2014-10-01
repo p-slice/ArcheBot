@@ -30,6 +30,16 @@ public final class RemoveModeAction extends IrcAction {
         super("MODE " + channel + " -" + mode + " " + value);
     }
 
+    public RemoveModeAction(Channel channel, User user, Mode.TempMode mode)
+    {
+        this(channel.name, user.getNick(), mode);
+    }
+
+    public RemoveModeAction(String channel, String user, Mode.TempMode mode)
+    {
+        super("MODE " + channel + " -" + mode + " " + user);
+    }
+
     public RemoveModeAction(User user, User.Mode mode)
     {
         this(user.getNick(), mode);
