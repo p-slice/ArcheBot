@@ -1,7 +1,7 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.actions.JoinAction;
-import net.pslice.archebot.actions.NickservAction;
+import net.pslice.archebot.output.JoinMessage;
+import net.pslice.archebot.output.NickservMessage;
 import net.pslice.archebot.listeners.ConnectionListener;
 import net.pslice.pml.PMLFile;
 import net.pslice.pml.PMLTitle;
@@ -22,7 +22,7 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.7.1";
+    public static final String VERSION = "1.8";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -125,13 +125,13 @@ public class ArcheBot extends User {
                     if (!this.getProperty(Property.nickservPass).equals(""))
                     {
                         if (this.getProperty(Property.nickservID).equals(""))
-                            this.send(new NickservAction(this.getProperty(Property.nickservPass)));
+                            this.send(new NickservMessage(this.getProperty(Property.nickservPass)));
                         else
-                            this.send(new NickservAction(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
+                            this.send(new NickservMessage(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
                     }
 
                     for (String channel : StringUtils.breakList(this.getProperty(Property.channels)))
-                        this.send(new JoinAction(channel));
+                        this.send(new JoinMessage(channel));
 
                     for (Listener listener : listeners)
                         if (listener instanceof ConnectionListener)
@@ -228,7 +228,7 @@ public class ArcheBot extends User {
 
     public Command getCommand(String ID)
     {
-        return commands.containsKey(ID) ? commands.get(ID) : null;
+        return commands.containsKey(ID.toLowerCase()) ? commands.get(ID.toLowerCase()) : null;
     }
 
     public Set<Command> getCommands()
@@ -298,7 +298,7 @@ public class ArcheBot extends User {
 
     public boolean isRegistered(String ID)
     {
-        return commands.containsKey(ID);
+        return commands.containsKey(ID.toLowerCase());
     }
 
     public boolean isUser(String nick)
@@ -311,11 +311,16 @@ public class ArcheBot extends User {
         this.log(2, line);
     }
 
+    public void logError(String error)
+    {
+        this.log(3, error);
+    }
+
     public void registerCommand(Command command)
     {
-        commands.put(command.getName(), command);
+        commands.put(command.getName().toLowerCase(), command);
         for (String ID : command.getIDs())
-            commands.put(ID, command);
+            commands.put(ID.toLowerCase(), command);
     }
 
     public void registerCommands(Command... commands)
@@ -356,10 +361,14 @@ public class ArcheBot extends User {
             this.setProperty(Property.nickservPass, "");
         if (!properties.isSubtitle("" + Property.prefix))
             this.setProperty(Property.prefix, "+");
+        if (!properties.isSubtitle("" + Property.allowSeparatePrefix))
+            this.setProperty(Property.allowSeparatePrefix, false);
         if (!properties.isSubtitle("" + Property.channels))
             this.setProperty(Property.channels, "#PotatoBot");
         if (!properties.isSubtitle("" + Property.verbose))
             this.setProperty(Property.verbose, true);
+        if (!properties.isSubtitle("" + Property.printErrorTrace))
+            this.setProperty(Property.printErrorTrace, true);
         if (!properties.isSubtitle("" + Property.rename))
             this.setProperty(Property.rename, false);
         if (!properties.isSubtitle("" + Property.reconnect))
@@ -377,6 +386,25 @@ public class ArcheBot extends User {
                 this.getUser(title.getTitle()).givePermission(User.Permission.generate(subtitle.getText()));
 
         data.save();
+    }
+
+    public void removeCommand(Command command)
+    {
+        this.removeCommand(command.getName());
+        for (String ID : command.getIDs())
+            this.removeCommand(ID);
+    }
+
+    public void removeCommand(String ID)
+    {
+        if (commands.containsKey(ID.toLowerCase()))
+            commands.remove(ID.toLowerCase());
+    }
+
+    public void removeListener(Listener listener)
+    {
+        if (listeners.contains(listener))
+            listeners.remove(listener);
     }
 
     public void saveProperties()
@@ -491,8 +519,10 @@ public class ArcheBot extends User {
         nickservID("nickservID"),
         nickservPass("nickservPass"),
         prefix("prefix"),
+        allowSeparatePrefix("allowSeparatePrefix"),
         channels("channels"),
         verbose("verbose"),
+        printErrorTrace("printErrorTrace"),
         rename("rename"),
         reconnect("reconnect"),
         reconnectDelay("reconnectDelay"),
@@ -538,7 +568,7 @@ public class ArcheBot extends User {
         public static Property getProperty(String string)
         {
             for (Property property : Property.values())
-                if (property.string.equals(string))
+                if (property.string.toLowerCase().equals(string.toLowerCase()))
                     return property;
             return null;
         }

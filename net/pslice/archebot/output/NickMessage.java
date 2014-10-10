@@ -1,8 +1,8 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.IrcAction;
 
-public final class NickAction extends IrcAction {
+public final class NickMessage extends IrcAction {
 
     /*
      * =======================================
@@ -10,7 +10,7 @@ public final class NickAction extends IrcAction {
      * =======================================
      */
 
-    public NickAction(String nick)
+    public NickMessage(String nick)
     {
         super("NICK " + nick);
     }

@@ -1,9 +1,9 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.IrcAction;
 import net.pslice.archebot.User;
 
-public final class ErrorAction  extends IrcAction {
+public final class ErrorMessage extends IrcAction {
 
     /*
      * =======================================
@@ -11,12 +11,12 @@ public final class ErrorAction  extends IrcAction {
      * =======================================
      */
 
-    public ErrorAction(User user, String error)
+    public ErrorMessage(User user, String error)
     {
         this(user.getNick(), error);
     }
 
-    public ErrorAction(String target, String error)
+    public ErrorMessage(String target, String error)
     {
         super("NOTICE " + target + " :\u00034Error\u000F: " + error);
     }

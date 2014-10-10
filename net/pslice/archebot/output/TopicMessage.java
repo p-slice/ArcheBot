@@ -1,9 +1,9 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.IrcAction;
 
-public final class TopicAction extends IrcAction {
+public final class TopicMessage extends IrcAction {
 
     /*
      * =======================================
@@ -11,12 +11,12 @@ public final class TopicAction extends IrcAction {
      * =======================================
      */
 
-    public TopicAction(Channel channel, String topic)
+    public TopicMessage(Channel channel, String topic)
     {
         this(channel.name, topic);
     }
 
-    public TopicAction(String channel, String topic)
+    public TopicMessage(String channel, String topic)
     {
         super("TOPIC " + channel + " :" + topic);
     }

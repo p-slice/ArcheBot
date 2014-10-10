@@ -1,5 +1,6 @@
 package net.pslice.archebot;
 
+import net.pslice.archebot.User.Permission;
 import net.pslice.utilities.StringUtils;
 
 public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
@@ -18,7 +19,7 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
     protected final String[] IDs;
 
     // The permission required to run the command
-    protected final User.Permission permission;
+    protected final Permission permission;
 
     // Whether or not the command is enabled
     protected boolean enabled = true;
@@ -31,20 +32,20 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
 
     public Command(String name)
     {
-        this(name, User.Permission.DEFAULT);
+        this(name, Permission.DEFAULT);
     }
 
-    public Command(String name, User.Permission permission)
+    public Command(String name, Permission permission)
     {
         this(name, permission, "[No parameters specified]", "[No description specified]");
     }
 
     public Command(String name, String parameters, String description, String... IDs)
     {
-        this(name, User.Permission.DEFAULT, parameters, description, IDs);
+        this(name, Permission.DEFAULT, parameters, description, IDs);
     }
 
-    public Command(String name, User.Permission permission, String parameters, String description, String... IDs)
+    public Command(String name, Permission permission, String parameters, String description, String... IDs)
     {
         this.name = name;
         this.IDs = IDs;
@@ -76,7 +77,7 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
         return parameters;
     }
 
-    public User.Permission getPermission()
+    public Permission getPermission()
     {
         return permission;
     }

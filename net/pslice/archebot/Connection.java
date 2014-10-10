@@ -1,7 +1,8 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.actions.ErrorAction;
-import net.pslice.archebot.actions.RawAction;
+import net.pslice.archebot.output.ErrorMessage;
+import net.pslice.archebot.output.RawMessage;
+import net.pslice.archebot.events.*;
 import net.pslice.archebot.listeners.*;
 import net.pslice.archebot.ArcheBot.Property;
 import net.pslice.utilities.Queue;
@@ -100,7 +101,7 @@ final class Connection {
         if (!bot.isUser(bot.getNick()))
             bot.addUser(bot);
 
-        if (bot.getProperty(Property.timeoutDelay).matches("\\d+"))
+        if (!bot.getProperty(Property.timeoutDelay).matches("\\d+"))
             bot.setProperty(Property.timeoutDelay, 240000);
         socket.setSoTimeout(Integer.parseInt(bot.getProperty(Property.timeoutDelay)));
 
@@ -241,7 +242,7 @@ final class Connection {
 
         catch (Exception e)
         {
-            bot.log(3, String.format(ArcheBot.exception_message, e.toString()));
+            bot.log(3, String.format(ArcheBot.exception_message, e));
         }
     }
 
@@ -265,12 +266,16 @@ final class Connection {
                     {
                         if (listener instanceof ActionListener)
                             ((ActionListener) listener).onPrivateAction(bot, source, message);
+                        if (listener instanceof PrivateActionEvent.Listener)
+                            ((PrivateActionEvent.Listener) listener).onPrivateAction(new PrivateActionEvent(bot, source, message));
                     }
                 else
                     for (Listener listener : bot.getListeners())
                     {
                         if (listener instanceof ActionListener)
                             ((ActionListener) listener).onAction(bot, bot.getChannel(lineSplit[2]), source, message);
+                        if (listener instanceof ActionEvent.Listener)
+                            ((ActionEvent.Listener) listener).onAction(new ActionEvent(bot, bot.getChannel(lineSplit[2]), source, message));
                     }
             }
 
@@ -278,45 +283,74 @@ final class Connection {
             {
                 String command = lineSplit[3].substring(2);
                 for (Listener listener : bot.getListeners())
+                {
                     if (listener instanceof CTCPListener)
-                        ((CTCPListener) listener).onCTCPCommand(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(2 + command.length(), message.length() - 1));
+                        ((CTCPListener) listener).onCTCPCommand(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(lineSplit[3].length(), message.length() - 1));
+                    if (listener instanceof CTCPEvent.Listener)
+                        ((CTCPEvent.Listener) listener).onCTCPCommand(new CTCPEvent(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(lineSplit[3].length(), message.length() - 1)));
+
+                }
             }
+
+            return;
         }
 
-        else if (message.startsWith(bot.getProperty(ArcheBot.Property.prefix)))
+        if (message.startsWith(bot.getProperty(Property.prefix)))
         {
-            String ID = lineSplit[3].substring(bot.getProperty(ArcheBot.Property.prefix).length() + 1).toLowerCase();
-            if (bot.isRegistered(ID))
+            String ID = lineSplit[3].substring(bot.getProperty(Property.prefix).length() + 1).toLowerCase();
+
+            if (!ID.equals("") || (StringUtils.toBoolean(bot.getProperty(Property.allowSeparatePrefix)) && lineSplit.length > 0))
             {
-                String[] args = new String[lineSplit.length - 4];
-                System.arraycopy(lineSplit, 4, args, 0, args.length);
+                String[] args;
+                if (ID.equals(""))
+                {
+                    ID = lineSplit[4];
+                    args = new String[lineSplit.length - 5];
+                    System.arraycopy(lineSplit, 5, args, 0, args.length);
+                }
 
-                Channel channel = bot.getChannel(lineSplit[2].equals(bot.getNick()) ? source.getNick() : lineSplit[2]);
+                else
+                {
+                    args = new String[lineSplit.length - 4];
+                    System.arraycopy(lineSplit, 4, args, 0, args.length);
+                }
 
-                for (Listener listener : bot.getListeners())
-                    if (listener instanceof CommandListener)
-                        ((CommandListener) listener).onCommand(bot, channel, source, bot.getCommand(ID), args);
+                if (bot.isRegistered(ID))
+                {
+                    Channel channel = bot.getChannel(lineSplit[2].equals(bot.getNick()) ? source.getNick() : lineSplit[2]);
+
+                    for (Listener listener : bot.getListeners())
+                    {
+                        if (listener instanceof CommandListener)
+                            ((CommandListener) listener).onCommand(bot, channel, source, bot.getCommand(ID), args);
+                        if (listener instanceof CommandEvent.Listener)
+                            ((CommandEvent.Listener) listener).onCommand(new CommandEvent(bot, channel, source, bot.getCommand(ID), args));
+                    }
+                }
+
+                else
+                    bot.send(new ErrorMessage(source, String.format("The command ID '%s' is not registered!", ID)));
+                return;
             }
-
-            else
-                bot.send(new ErrorAction(source, String.format("The command ID '%s' is not registered!", ID)));
         }
+
+        if (lineSplit[2].equals(bot.getNick()))
+            for (Listener listener : bot.getListeners())
+            {
+                if (listener instanceof MessageListener)
+                    ((MessageListener) listener).onPrivateMessage(bot, source, message);
+                if (listener instanceof PrivateMessageEvent.Listener)
+                    ((PrivateMessageEvent.Listener) listener).onPrivateMessage(new PrivateMessageEvent(bot, source, message));
+            }
 
         else
-        {
-            if (lineSplit[2].equals(bot.getNick()))
-                for (Listener listener : bot.getListeners())
-                {
-                    if (listener instanceof MessageListener)
-                        ((MessageListener) listener).onPrivateMessage(bot, source, message);
-                }
-            else
-                for (Listener listener : bot.getListeners())
-                {
-                    if (listener instanceof MessageListener)
-                        ((MessageListener) listener).onMessage(bot, bot.getChannel(lineSplit[2]), source, message);
-                }
-        }
+            for (Listener listener : bot.getListeners())
+            {
+                if (listener instanceof MessageListener)
+                    ((MessageListener) listener).onMessage(bot, bot.getChannel(lineSplit[2]), source, message);
+                if (listener instanceof MessageEvent.Listener)
+                    ((MessageEvent.Listener) listener).onMessage(new MessageEvent(bot, bot.getChannel(lineSplit[2]), source, message));
+            }
     }
 
     private void NOTICE(User source, String[] lineSplit)
@@ -324,15 +358,23 @@ final class Connection {
         if (lineSplit[2].equals(bot.getNick()))
         {
             for (Listener listener : bot.getListeners())
+            {
                 if (listener instanceof NoticeListener)
                     ((NoticeListener) listener).onPrivateNotice(bot, source, StringUtils.compact(lineSplit, 3).substring(1));
+                if (listener instanceof PrivateNoticeEvent.Listener)
+                    ((PrivateNoticeEvent.Listener) listener).onPrivateNotice(new PrivateNoticeEvent(bot, source, StringUtils.compact(lineSplit, 3).substring(1)));
+            }
         }
 
         else
         {
             for (Listener listener : bot.getListeners())
+            {
                 if (listener instanceof NoticeListener)
                     ((NoticeListener) listener).onNotice(bot, bot.getChannel(lineSplit[2]), source, StringUtils.compact(lineSplit, 3).substring(1));
+                if (listener instanceof NoticeEvent.Listener)
+                    ((NoticeEvent.Listener) listener).onNotice(new NoticeEvent(bot, bot.getChannel(lineSplit[2]), source, StringUtils.compact(lineSplit, 3).substring(1)));
+            }
         }
     }
 
@@ -344,16 +386,20 @@ final class Connection {
         if (source.equals(bot))
         {
             bot.addChannel(channel);
-            bot.send(new RawAction("WHO " + lineSplit[2]));
-            bot.send(new RawAction("MODE " + lineSplit[2]));
+            bot.send(new RawMessage("WHO " + lineSplit[2]));
+            bot.send(new RawMessage("MODE " + lineSplit[2]));
         }
 
         else
-            bot.send(new RawAction("WHOIS " + source.getNick()));
+            bot.send(new RawMessage("WHOIS " + source.getNick()));
 
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof JoinListener)
                 ((JoinListener) listener).onJoin(bot, channel, source);
+            if (listener instanceof JoinEvent.Listener)
+                ((JoinEvent.Listener) listener).onJoin(new JoinEvent(bot, channel, source));
+        }
     }
 
     private void PART(User source, String[] lineSplit)
@@ -365,8 +411,12 @@ final class Connection {
             channel.removeUser(source);
 
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof PartListener)
                 ((PartListener) listener).onPart(bot, channel, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : "");
+            if (listener instanceof PartEvent.Listener)
+                ((PartEvent.Listener) listener).onPart(new PartEvent(bot, channel, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : ""));
+        }
     }
 
     private void QUIT(User source, String[] lineSplit)
@@ -377,8 +427,12 @@ final class Connection {
         bot.removeUser(source.getNick());
 
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof QuitListener)
                 ((QuitListener) listener).onQuit(bot, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : "");
+            if (listener instanceof QuitEvent.Listener)
+                ((QuitEvent.Listener) listener).onQuit(new QuitEvent(bot, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : ""));
+        }
     }
 
     private void NICK(User source, String[] lineSplit)
@@ -396,8 +450,12 @@ final class Connection {
             bot.reload();
 
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof NickChangeListener)
                 ((NickChangeListener) listener).onNickChange(bot, source, oldNick);
+            if (listener instanceof NickEvent.Listener)
+                ((NickEvent.Listener) listener).onNickChange(new NickEvent(bot, source, oldNick));
+        }
     }
 
     private void MODE(User source, String[] lineSplit)
@@ -419,15 +477,23 @@ final class Connection {
                 {
                     source.addMode(mode);
                     for (Listener listener : bot.getListeners())
+                    {
                         if (listener instanceof UserModeListener)
                             ((UserModeListener) listener).onUserModeSet(bot, source, mode);
+                        if (listener instanceof UserModeEvent.Listener)
+                            ((UserModeEvent.Listener) listener).onUserModeSet(new UserModeEvent(bot, source, mode, true));
+                    }
                 }
                 else
                 {
                     source.removeMode(mode);
                     for (Listener listener : bot.getListeners())
+                    {
                         if (listener instanceof UserModeListener)
                             ((UserModeListener) listener).onUserModeRemoved(bot, source, mode);
+                        if (listener instanceof UserModeEvent.Listener)
+                            ((UserModeEvent.Listener) listener).onUserModeSet(new UserModeEvent(bot, source, mode, false));
+                    }
                 }
             }
         }
@@ -443,19 +509,28 @@ final class Connection {
                 if (mode instanceof Mode.TempMode)
                 {
                     User user = bot.getUser(value);
+                    Mode.TempMode tempMode = (Mode.TempMode) mode;
                     if (added)
                     {
-                        channel.addMode(user, (Mode.TempMode) mode);
+                        channel.addMode(user, tempMode);
                         for (Listener listener : bot.getListeners())
+                        {
                             if (listener instanceof ModeListener)
-                                ((ModeListener) listener).onModeSet(bot, channel, source, user, (Mode.TempMode) mode);
+                                ((ModeListener) listener).onModeSet(bot, channel, source, user, tempMode);
+                            if (listener instanceof TempModeEvent.Listener)
+                                ((TempModeEvent.Listener) listener).onTempModeSet(new TempModeEvent(bot, channel, source, user, tempMode, true));
+                        }
                     }
                     else
                     {
-                        channel.removeMode(user, (Mode.TempMode) mode);
+                        channel.removeMode(user, tempMode);
                         for (Listener listener : bot.getListeners())
+                        {
                             if (listener instanceof ModeListener)
-                                ((ModeListener) listener).onModeRemoved(bot, channel, source, user, (Mode.TempMode) mode);
+                                ((ModeListener) listener).onModeRemoved(bot, channel, source, user, tempMode);
+                            if (listener instanceof TempModeEvent.Listener)
+                                ((TempModeEvent.Listener) listener).onTempModeSet(new TempModeEvent(bot, channel, source, user, tempMode, false));
+                        }
                     }
                 }
 
@@ -465,16 +540,24 @@ final class Connection {
                     {
                         channel.addMode(mode, value);
                         for (Listener listener : bot.getListeners())
+                        {
                             if (listener instanceof ModeListener)
                                 ((ModeListener) listener).onModeSet(bot, channel, source, mode, value);
+                            if (listener instanceof ModeEvent.Listener)
+                                ((ModeEvent.Listener) listener).onModeSet(new ModeEvent(bot, channel, source, mode, value, true));
+                        }
                     }
 
                     else
                     {
                         channel.removeMode(mode, value);
                         for (Listener listener : bot.getListeners())
+                        {
                             if (listener instanceof ModeListener)
                                 ((ModeListener) listener).onModeRemoved(bot, channel, source, mode, value);
+                            if (listener instanceof ModeEvent.Listener)
+                                ((ModeEvent.Listener) listener).onModeSet(new ModeEvent(bot, channel, source, mode, value, false));
+                        }
                     }
                 }
             }
@@ -488,8 +571,12 @@ final class Connection {
 
         channel.removeUser(user);
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof KickListener)
                 ((KickListener) listener).onKick(bot, channel, source, user, StringUtils.compact(lineSplit, 3).substring(1));
+            if (listener instanceof KickEvent.Listener)
+                ((KickEvent.Listener) listener).onKick(new KickEvent(bot, channel, source, user, StringUtils.compact(lineSplit, 3).substring(1)));
+        }
     }
 
     private void TOPIC(User source, String[] lineSplit)
@@ -500,23 +587,31 @@ final class Connection {
         channel.setTopicSetter("" + source);
 
         for (Listener listener : bot.getListeners())
+        {
             if (listener instanceof TopicListener)
                 ((TopicListener) listener).onTopicSet(bot, channel, source, topic);
+            if (listener instanceof TopicEvent.Listener)
+                ((TopicEvent.Listener) listener).onTopicChange(new TopicEvent(bot, channel, source, topic));
+        }
     }
 
     private void INVITE(User source, String[] lineSplit)
     {
         for (String chan : StringUtils.compact(lineSplit, 3).substring(1).split(" "))
             for (Listener listener : bot.getListeners())
+            {
                 if (listener instanceof InviteListener)
                     ((InviteListener) listener).onInvite(bot, bot.getChannel(chan), source);
+                if (listener instanceof InviteEvent.Listener)
+                    ((InviteEvent.Listener) listener).onInvite(new InviteEvent(bot, bot.getChannel(chan), source));
+            }
     }
 
     private void on322(String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[3]);
         if (channel.totalUsers() != Integer.parseInt(lineSplit[4]))
-            bot.send(new RawAction("WHO " + channel.name));
+            bot.send(new RawMessage("WHO " + channel.name));
     }
 
     private void on352(String[] lineSplit)
@@ -632,19 +727,20 @@ final class Connection {
 
                     catch (Exception e)
                     {
-                        bot.log(3, "An exception caused by your code has occurred (" + e.toString() + ")");
+                        bot.log(3, "An exception (probably) caused by your code has occurred (" + e + ")");
                         bot.log(2, "The bot should continue functioning without problems; however, you may want to try fix the issue.");
-                        e.printStackTrace();
+                        if (StringUtils.toBoolean(bot.getProperty(Property.printErrorTrace)))
+                            e.printStackTrace();
                     }
                 }
                 if (active)
-                    bot.disconnect("Connection closed", StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.reconnect)));
+                    bot.disconnect("Connection closed", StringUtils.toBoolean(bot.getProperty(Property.reconnect)));
             }
 
             catch (IOException e)
             {
                 bot.log(3, String.format(ArcheBot.exception_message, e));
-                bot.disconnect("A fatal exception occurred!", StringUtils.toBoolean(bot.getProperty(ArcheBot.Property.reconnect)));
+                bot.disconnect("A fatal exception occurred!", StringUtils.toBoolean(bot.getProperty(Property.reconnect)));
             }
         }
     }
@@ -683,6 +779,8 @@ final class Connection {
 
         void sendLine(String line)
         {
+            if (line == null || line.equals(""))
+                return;
             if (line.length() > 510)
                 line = line.substring(0, 510);
 

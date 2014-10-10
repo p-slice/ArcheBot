@@ -1,8 +1,8 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.IrcAction;
 
-public final class RawAction extends IrcAction {
+public final class RawMessage extends IrcAction {
 
     /*
      * =======================================
@@ -10,7 +10,7 @@ public final class RawAction extends IrcAction {
      * =======================================
      */
 
-    public RawAction(String line)
+    public RawMessage(String line)
     {
         super(line);
     }

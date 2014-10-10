@@ -1,8 +1,8 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.*;
 
-public final class GiveModeAction extends IrcAction {
+public final class AddModeMessage extends IrcAction {
 
     /*
      * =======================================
@@ -10,42 +10,42 @@ public final class GiveModeAction extends IrcAction {
      * =======================================
      */
 
-    public GiveModeAction(Channel channel, Mode.ValueMode mode)
+    public AddModeMessage(Channel channel, Mode.ValueMode mode)
     {
         this(channel.name, mode);
     }
 
-    public GiveModeAction(String channel, Mode.ValueMode mode)
+    public AddModeMessage(String channel, Mode.ValueMode mode)
     {
         this(channel, mode, "");
     }
 
-    public GiveModeAction(Channel channel, Mode mode, String value)
+    public AddModeMessage(Channel channel, Mode mode, String value)
     {
         this(channel.name, mode, value);
     }
 
-    public GiveModeAction(String channel, Mode mode, String value)
+    public AddModeMessage(String channel, Mode mode, String value)
     {
         super("MODE " + channel + " +" + mode + (value.equals("") ? "" : " " + value));
     }
 
-    public GiveModeAction(Channel channel, User user, Mode.TempMode mode)
+    public AddModeMessage(Channel channel, User user, Mode.TempMode mode)
     {
         this(channel.name, user.getNick(), mode);
     }
 
-    public GiveModeAction(String channel, String user, Mode.TempMode mode)
+    public AddModeMessage(String channel, String user, Mode.TempMode mode)
     {
         super("MODE " + channel + " +" + mode + " " + user);
     }
 
-    public GiveModeAction(User user, User.Mode mode)
+    public AddModeMessage(User user, User.Mode mode)
     {
         this(user.getNick(), mode);
     }
 
-    public GiveModeAction(String user, User.Mode mode)
+    public AddModeMessage(String user, User.Mode mode)
     {
         super("MODE " + user + " +" + mode);
     }

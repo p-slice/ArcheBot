@@ -1,8 +1,8 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.IrcAction;
 
-public final class NickservAction extends IrcAction {
+public final class NickservMessage extends IrcAction {
 
     /*
      * =======================================
@@ -10,12 +10,12 @@ public final class NickservAction extends IrcAction {
      * =======================================
      */
 
-    public NickservAction(String nick, String password)
+    public NickservMessage(String nick, String password)
     {
         this(nick + " " + password);
     }
 
-    public NickservAction(String password)
+    public NickservMessage(String password)
     {
         super("NICKSERV IDENTIFY " + password);
     }

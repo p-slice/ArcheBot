@@ -1,10 +1,10 @@
-package net.pslice.archebot.actions;
+package net.pslice.archebot.output;
 
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.IrcAction;
 import net.pslice.archebot.User;
 
-public final class NoticeAction extends IrcAction {
+public final class NoticeMessage extends IrcAction {
 
     /*
      * =======================================
@@ -12,17 +12,17 @@ public final class NoticeAction extends IrcAction {
      * =======================================
      */
 
-    public NoticeAction(Channel channel, String notice)
+    public NoticeMessage(Channel channel, String notice)
     {
         this(channel.name, notice);
     }
 
-    public NoticeAction(User user, String notice)
+    public NoticeMessage(User user, String notice)
     {
         this(user.getNick(), notice);
     }
 
-    public NoticeAction(String target, String notice)
+    public NoticeMessage(String target, String notice)
     {
         super("NOTICE " + target + " :" + notice);
     }
