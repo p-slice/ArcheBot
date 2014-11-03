@@ -151,7 +151,7 @@ public class Channel {
     {
         int i;
         return  name +
-                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") : "") +
+                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") +"}" : "") +
                 ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
                 ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
                 ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +

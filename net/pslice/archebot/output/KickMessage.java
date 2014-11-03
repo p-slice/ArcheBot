@@ -22,13 +22,13 @@ public final class KickMessage extends IrcAction {
         this(channel, user, "");
     }
 
-    public KickMessage(Channel channel, User user, String reason)
+    public KickMessage(Channel channel, User user, String reason, Object... objects)
     {
-        this(channel.name, user.getNick(), reason);
+        this(channel.name, user.getNick(), reason, objects);
     }
 
-    public KickMessage(String channel, String user, String reason)
+    public KickMessage(String channel, String user, String reason, Object... objects)
     {
-        super("KICK " + channel + " " + user +  " :" + reason);
+        super("KICK " + channel + " " + user +  " :" + String.format(reason, objects));
     }
 }

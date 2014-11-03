@@ -22,21 +22,10 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.8";
+    public static final String VERSION = "1.9";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
-
-    // The message to display if an internal error occurs
-    static final String exception_message = "An internal exception has occurred (%s)";
-
-    // Symbols to indicate the type of message being logged
-    private static final String[] logTypes = {
-            "<- ",
-            "-> ",
-            "<> ",
-            "== Error: "
-    };
 
     // The format of the date in the bot's output log
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
@@ -55,6 +44,9 @@ public class ArcheBot extends User {
 
     // The file manager used for loading/saving files
     private final FileManager fileManager;
+
+    // The time the bot was created, used for calculating runtime
+    private final long startTime = System.currentTimeMillis();
 
     // The PML file containing all bot data
     private PMLFile data;
@@ -85,7 +77,7 @@ public class ArcheBot extends User {
         fileManager = new FileManager(directory);
         this.reload();
 
-        this.log(2, "ArcheBot (Version " + VERSION + ") loaded and ready for use!");
+        this.log("ArcheBot (Version %s) loaded and ready for use!", VERSION);
     }
 
     /*
@@ -98,23 +90,23 @@ public class ArcheBot extends User {
     public void connect()
     {
         if (this.isConnected())
-            this.log(3, "Unable to connect (A connection is already active)");
+            this.logError("Unable to connect (A connection is already active)");
         else
         {
             this.reload();
             try
             {
-                if (this.getProperty(Property.nick).equals(""))
-                    this.log(3, "Unable to connect (No nick given)");
-                else if (this.getProperty(Property.server).equals(""))
-                    this.log(3, "Unable to connect (No server given)");
+                if (this.checkEmpty(Property.nick))
+                    this.logError("Unable to connect (No nick provided)");
+                else if (this.checkEmpty(Property.server))
+                    this.logError("Unable to connect (No server provided)");
                 else if (!this.getProperty(Property.port).matches("\\d+"))
-                    this.log(3, "Unable to connect (Port can only contain digits)");
+                    this.logError("Unable to connect (Port can only contain digits)");
                 else
                 {
-                    if (this.getProperty(Property.login).equals(""))
+                    if (this.checkEmpty(Property.login))
                         this.setProperty(Property.login, this.getProperty(Property.nick));
-                    if (this.getProperty(Property.realname).equals(""))
+                    if (this.checkEmpty(Property.realname))
                         this.setProperty(Property.realname, "ArcheBot (Version {VERSION}) by p_slice");
                     if (!this.getProperty(Property.messageDelay).matches("\\d+"))
                         this.setProperty(Property.messageDelay, 1000);
@@ -122,9 +114,9 @@ public class ArcheBot extends User {
                     connection = new Connection(this);
                     connectTime = System.currentTimeMillis();
 
-                    if (!this.getProperty(Property.nickservPass).equals(""))
+                    if (!this.checkEmpty(Property.nickservPass))
                     {
-                        if (this.getProperty(Property.nickservID).equals(""))
+                        if (this.checkEmpty(Property.nickservID))
                             this.send(new NickservMessage(this.getProperty(Property.nickservPass)));
                         else
                             this.send(new NickservMessage(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
@@ -141,15 +133,15 @@ public class ArcheBot extends User {
 
             catch (Connection.ConnectionException e)
             {
-                this.log(3, "Connection refused (" + e + ")");
+                this.logError("Connection refused (%s)", e);
             }
 
             catch (Exception e)
             {
                 boolean reconnect = StringUtils.toBoolean(this.getProperty(Property.reconnect));
 
-                this.log(3, String.format(exception_message, e));
-                this.log(2, "Disconnected (A fatal exception occurred while connecting | Reconnect: " + reconnect + ")");
+                this.logError("An internal exception has occurred (%s)", e);
+                this.log("Disconnected (A fatal exception occurred while connecting | Reconnect: %b)", reconnect);
                 if (reconnect)
                 {
                     if (!this.getProperty(Property.reconnectDelay).matches("\\d+"))
@@ -161,7 +153,7 @@ public class ArcheBot extends User {
 
                     catch (InterruptedException ie)
                     {
-                        this.log(3, String.format(exception_message, ie));
+                        this.logError("An internal exception has occurred (%s)", ie);
                     }
                     this.connect();
                 }
@@ -183,7 +175,7 @@ public class ArcheBot extends User {
     public void disconnect(String message, boolean reconnect)
     {
         if (!this.isConnected())
-            this.log(3, "Unable to disconnect (No connection currently exists)");
+            this.logError("Unable to disconnect (No connection currently exists)");
         else
         {
             if (connection.isActive())
@@ -206,7 +198,7 @@ public class ArcheBot extends User {
             users.clear();
             channels.clear();
 
-            this.log(2, "Disconnected (" + message + " | Reconnect: " + reconnect + ")");
+            this.log("Disconnected (%s | Reconnect: %b)", message, reconnect);
 
             for (Listener listener : listeners)
                 if (listener instanceof ConnectionListener)
@@ -256,6 +248,11 @@ public class ArcheBot extends User {
         return new TreeSet<>(commands.keySet());
     }
 
+    public long getRuntime()
+    {
+        return System.currentTimeMillis() - startTime;
+    }
+
     public long getUptime()
     {
         return this.isConnected() ? System.currentTimeMillis() - connectTime : 0;
@@ -263,12 +260,9 @@ public class ArcheBot extends User {
 
     public User getUser(String nick)
     {
-        User user;
-        if (users.containsKey(nick))
-            user = users.get(nick);
-        else
-            users.put(nick, user = new User(nick));
-        return user;
+        if (!users.containsKey(nick))
+            users.put(nick, new User(nick));
+        return users.get(nick);
     }
 
     public Set<User> getUsers()
@@ -306,14 +300,14 @@ public class ArcheBot extends User {
         return users.containsKey(nick);
     }
 
-    public void log(String line)
+    public void log(String line, Object... objects)
     {
-        this.log(2, line);
+        this.log(2, String.format(line, objects));
     }
 
-    public void logError(String error)
+    public void logError(String error, Object... objects)
     {
-        this.log(3, error);
+        this.log(3, String.format(error, objects));
     }
 
     public void registerCommand(Command command)
@@ -363,6 +357,8 @@ public class ArcheBot extends User {
             this.setProperty(Property.prefix, "+");
         if (!properties.isSubtitle("" + Property.allowSeparatePrefix))
             this.setProperty(Property.allowSeparatePrefix, false);
+        if (!properties.isSubtitle("" + Property.enableCommands))
+            this.setProperty(Property.enableCommands, true);
         if (!properties.isSubtitle("" + Property.channels))
             this.setProperty(Property.channels, "#PotatoBot");
         if (!properties.isSubtitle("" + Property.verbose))
@@ -415,9 +411,9 @@ public class ArcheBot extends User {
     public void send(IrcAction action)
     {
         if (this.isConnected())
-            connection.send(action.toString(), false);
+            connection.send("" + action, false);
         else
-            this.log(3, "Send method failed (No active connection exists!)");
+            this.logError("Send method failed (No active connection exists!)");
     }
 
     public void setOutputStream(PrintStream stream)
@@ -467,15 +463,26 @@ public class ArcheBot extends User {
      * =======================================
      */
 
-    synchronized void log(int msgType, String line)
+    void addChannel(Channel channel)
     {
-        if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
-            stream.println(dateFormat.format(new Date()) + logTypes[msgType] + line);
+        channels.put(channel.name, channel);
     }
 
     void addUser(User user)
     {
         users.put(user.getNick(), user);
+    }
+
+    synchronized void log(int type, String line)
+    {
+        if (StringUtils.toBoolean(this.getProperty(Property.verbose)))
+            stream.println(dateFormat.format(new Date()) + (type == 0 ? "<-" : type == 1 ? "->" : type == 2 ? "<>" : "== Error:") + " " + line);
+    }
+
+    void removeChannel(String name)
+    {
+        if (channels.containsKey(name))
+            channels.remove(name);
     }
 
     void removeUser(String nick)
@@ -484,15 +491,15 @@ public class ArcheBot extends User {
             users.remove(nick);
     }
 
-    void addChannel(Channel channel)
-    {
-        channels.put(channel.name, channel);
-    }
+    /*
+     * =======================================
+     * Private methods:
+     * =======================================
+     */
 
-    void removeChannel(String name)
+    private boolean checkEmpty(Property property)
     {
-        if (channels.containsKey(name))
-            channels.remove(name);
+        return this.getProperty(property).equals("");
     }
 
     /*
@@ -520,6 +527,7 @@ public class ArcheBot extends User {
         nickservPass("nickservPass"),
         prefix("prefix"),
         allowSeparatePrefix("allowSeparatePrefix"),
+        enableCommands("enableCommands"),
         channels("channels"),
         verbose("verbose"),
         printErrorTrace("printErrorTrace"),
@@ -534,7 +542,7 @@ public class ArcheBot extends User {
          * =======================================
          */
 
-        private final String string;
+        private final String name;
 
         /*
          * =======================================
@@ -542,9 +550,9 @@ public class ArcheBot extends User {
          * =======================================
          */
 
-        private Property(String string)
+        private Property(String name)
         {
-            this.string = string;
+            this.name = name;
         }
 
         /*
@@ -556,7 +564,7 @@ public class ArcheBot extends User {
         @Override
         public String toString()
         {
-            return string;
+            return name;
         }
 
         /*
@@ -565,12 +573,61 @@ public class ArcheBot extends User {
          * =======================================
          */
 
-        public static Property getProperty(String string)
+        public static boolean isProperty(String name)
         {
             for (Property property : Property.values())
-                if (property.string.toLowerCase().equals(string.toLowerCase()))
+                if (property.name.toLowerCase().equals(name.toLowerCase()))
+                    return true;
+            return false;
+        }
+
+        public static Property getProperty(String name)
+        {
+            for (Property property : Property.values())
+                if (property.name.toLowerCase().equals(name.toLowerCase()))
                     return property;
             return null;
+        }
+    }
+
+    public static interface Listener<B extends ArcheBot> {}
+
+    public static class Event<B extends ArcheBot> {
+
+    /*
+     * =======================================
+     * Objects and variables:
+     * =======================================
+     */
+
+        private final B bot;
+        private final long timeStamp = System.currentTimeMillis();
+
+    /*
+     * =======================================
+     * Constructors:
+     * =======================================
+     */
+
+        protected Event(B bot)
+        {
+            this.bot = bot;
+        }
+
+    /*
+     * =======================================
+     * Public methods:
+     * =======================================
+     */
+
+        public B getBot()
+        {
+            return bot;
+        }
+
+        public long getTimeStamp()
+        {
+            return timeStamp;
         }
     }
 }

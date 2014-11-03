@@ -11,10 +11,12 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
      * =======================================
      */
 
-    // Information about the command
-    protected final String name,
-                           parameters,
-                           description;
+    // The name of the command
+    protected final String name;
+
+    // The parameters and description of the command
+    protected String parameters,
+                     description;
     // Alternate IDs the command can be run with
     protected final String[] IDs;
 
@@ -92,9 +94,19 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
         return enabled;
     }
 
+    public void setDescription(String description)
+    {
+        this.description = description;
+    }
+
     public void setEnabled(boolean enabled)
     {
         this.enabled = enabled;
+    }
+
+    public void setParameters(String parameters)
+    {
+        this.parameters = parameters;
     }
 
     /*

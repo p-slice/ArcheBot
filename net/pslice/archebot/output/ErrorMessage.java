@@ -11,13 +11,13 @@ public final class ErrorMessage extends IrcAction {
      * =======================================
      */
 
-    public ErrorMessage(User user, String error)
+    public ErrorMessage(User user, String error, Object... objects)
     {
-        this(user.getNick(), error);
+        this(user.getNick(), error, objects);
     }
 
-    public ErrorMessage(String target, String error)
+    public ErrorMessage(String target, String error, Object... objects)
     {
-        super("NOTICE " + target + " :\u00034Error\u000F: " + error);
+        super("NOTICE " + target + " :\u00034Error\u000F: " + String.format(error, objects));
     }
 }

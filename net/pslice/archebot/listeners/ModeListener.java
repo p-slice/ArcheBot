@@ -2,7 +2,7 @@ package net.pslice.archebot.listeners;
 
 import net.pslice.archebot.*;
 
-public interface ModeListener<B extends ArcheBot> extends Listener<B> {
+public interface ModeListener<B extends ArcheBot> extends ArcheBot.Listener<B> {
 
     public void onModeSet(B bot, Channel channel, User setter, Mode mode, String value);
 

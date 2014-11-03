@@ -2,7 +2,7 @@ package net.pslice.archebot.events;
 
 import net.pslice.archebot.*;
 
-public class CommandEvent<B extends ArcheBot> extends Event<B> {
+public class CommandEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     /*
      * =======================================
@@ -63,7 +63,7 @@ public class CommandEvent<B extends ArcheBot> extends Event<B> {
      * =======================================
      */
 
-    public static interface Listener<B extends ArcheBot> extends net.pslice.archebot.Listener<B>
+    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
     {
         public void onCommand(CommandEvent<B> event);
     }

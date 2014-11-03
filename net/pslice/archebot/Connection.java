@@ -4,6 +4,7 @@ import net.pslice.archebot.output.ErrorMessage;
 import net.pslice.archebot.output.RawMessage;
 import net.pslice.archebot.events.*;
 import net.pslice.archebot.listeners.*;
+import net.pslice.archebot.ArcheBot.Listener;
 import net.pslice.archebot.ArcheBot.Property;
 import net.pslice.utilities.Queue;
 import net.pslice.utilities.StringUtils;
@@ -32,9 +33,6 @@ final class Connection {
     // The status of the connection
     private boolean active = false;
 
-    // The wait time (in milliseconds) between messages sent to the server
-    private final int messageDelay;
-
     /*
      * =======================================
      * Constructors:
@@ -51,14 +49,13 @@ final class Connection {
                server     = bot.getProperty(Property.server),
                serverPass = bot.getProperty(Property.serverPass);
         int    port       = Integer.parseInt(bot.getProperty(Property.port));
-        messageDelay      = Integer.parseInt(bot.getProperty(Property.messageDelay));
 
         bot.setNick(nick);
-        bot.log(2, "Attempting to connect to " + server + " on port " + port + "...");
+        bot.log("Attempting to connect to %s on port %d...", server, port);
 
         socket = new Socket(server, port);
 
-        bot.log(2, "Connection successful!");
+        bot.log("Connection successful!");
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
@@ -85,7 +82,7 @@ final class Connection {
             {
                 if (StringUtils.toBoolean(bot.getProperty(Property.rename)))
                 {
-                    bot.log(3, "Nick already in use (Trying another one!)");
+                    bot.logError("Nick already in use (Trying another one!)");
                     bot.setNick(nick += "_");
                     output.sendLine("NICK " + bot.getNick());
                 }
@@ -242,7 +239,7 @@ final class Connection {
 
         catch (Exception e)
         {
-            bot.log(3, String.format(ArcheBot.exception_message, e));
+            bot.logError("An internal exception has occurred (%s)", e);
         }
     }
 
@@ -295,7 +292,7 @@ final class Connection {
             return;
         }
 
-        if (message.startsWith(bot.getProperty(Property.prefix)))
+        if (message.startsWith(bot.getProperty(Property.prefix)) && StringUtils.toBoolean(bot.getProperty(Property.enableCommands)))
         {
             String ID = lineSplit[3].substring(bot.getProperty(Property.prefix).length() + 1).toLowerCase();
 
@@ -329,7 +326,7 @@ final class Connection {
                 }
 
                 else
-                    bot.send(new ErrorMessage(source, String.format("The command ID '%s' is not registered!", ID)));
+                    bot.send(new ErrorMessage(source, "The command ID '%s' is not registered!", ID));
                 return;
             }
         }
@@ -727,8 +724,8 @@ final class Connection {
 
                     catch (Exception e)
                     {
-                        bot.log(3, "An exception (probably) caused by your code has occurred (" + e + ")");
-                        bot.log(2, "The bot should continue functioning without problems; however, you may want to try fix the issue.");
+                        bot.log("An exception (probably) caused by your code has occurred (%s)", e);
+                        bot.logError("The bot should continue functioning without problems; however, you may want to try fix the issue.");
                         if (StringUtils.toBoolean(bot.getProperty(Property.printErrorTrace)))
                             e.printStackTrace();
                     }
@@ -739,7 +736,7 @@ final class Connection {
 
             catch (IOException e)
             {
-                bot.log(3, String.format(ArcheBot.exception_message, e));
+                bot.logError("An internal exception has occurred (%s)", e);
                 bot.disconnect("A fatal exception occurred!", StringUtils.toBoolean(bot.getProperty(Property.reconnect)));
             }
         }
@@ -794,7 +791,7 @@ final class Connection {
 
                 catch (Exception e)
                 {
-                    bot.log(3, String.format(ArcheBot.exception_message, e));
+                    bot.logError("An internal exception has occurred (%s)", e);
                 }
             }
         }
@@ -817,7 +814,7 @@ final class Connection {
             {
                 if (queue.size() > 1000)
                 {
-                    bot.log(2, "Too much output backlogged. Clearing all messages.");
+                    bot.log("Too much output backlogged (Clearing all messages).");
                     queue.clear();
                 }
 
@@ -827,12 +824,12 @@ final class Connection {
 
                     try
                     {
-                        Thread.sleep(messageDelay);
+                        Thread.sleep(bot.getProperty(Property.messageDelay).matches("\\d+") ? Integer.parseInt(bot.getProperty(Property.messageDelay)) : bot.setProperty(Property.messageDelay, 2400000));
                     }
 
                     catch (Exception e)
                     {
-                        bot.log(3, String.format(ArcheBot.exception_message, e));
+                        bot.logError("An internal exception has occurred (%s)", e);
                     }
                 }
             }

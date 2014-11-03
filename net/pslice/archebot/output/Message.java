@@ -12,18 +12,18 @@ public final class Message extends IrcAction {
      * =======================================
      */
 
-    public Message(Channel channel, String message)
+    public Message(Channel channel, String message, Object... objects)
     {
-        this(channel.name, message);
+        this(channel.name, message, objects);
     }
 
-    public Message(User user, String message)
+    public Message(User user, String message, Object... objects)
     {
-        this(user.getNick(), message);
+        this(user.getNick(), message, objects);
     }
 
-    public Message(String target, String message)
+    public Message(String target, String message, Object... objects)
     {
-        super("PRIVMSG " + target + " :" + message);
+        super("PRIVMSG " + target + " :" + String.format(message, objects));
     }
 }

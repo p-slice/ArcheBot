@@ -21,13 +21,13 @@ public final class PartMessage extends IrcAction {
         this(channel, "");
     }
 
-    public PartMessage(Channel channel, String reason)
+    public PartMessage(Channel channel, String reason, Object... objects)
     {
-        this(channel.name, reason);
+        this(channel.name, reason, objects);
     }
 
-    public PartMessage(String channel, String reason)
+    public PartMessage(String channel, String reason, Object... objects)
     {
-        super("PART " + channel + " :" + reason);
+        super("PART " + channel + " :" + String.format(reason, objects));
     }
 }
