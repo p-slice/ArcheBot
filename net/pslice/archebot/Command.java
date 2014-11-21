@@ -13,7 +13,6 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
 
     // The name of the command
     protected final String name;
-
     // The parameters and description of the command
     protected String parameters,
                      description;

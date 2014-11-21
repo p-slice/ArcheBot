@@ -1,10 +1,10 @@
 package net.pslice.archebot.output;
 
+import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
-import net.pslice.archebot.IrcAction;
 import net.pslice.archebot.User;
 
-public final class KickMessage extends IrcAction {
+public final class KickMessage extends ArcheBot.Output {
 
     /*
      * =======================================

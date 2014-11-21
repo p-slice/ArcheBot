@@ -1,8 +1,8 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.IrcAction;
+import net.pslice.archebot.ArcheBot;
 
-public final class NickservMessage extends IrcAction {
+public final class NickservMessage extends ArcheBot.Output {
 
     /*
      * =======================================

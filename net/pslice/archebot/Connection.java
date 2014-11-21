@@ -48,7 +48,7 @@ final class Connection {
                realname   = bot.getProperty(Property.realname).replace("{VERSION}", ArcheBot.VERSION).replace("{UVERSION}", ArcheBot.USER_VERSION),
                server     = bot.getProperty(Property.server),
                serverPass = bot.getProperty(Property.serverPass);
-        int    port       = Integer.parseInt(bot.getProperty(Property.port));
+        int    port       = bot.toInteger(Property.port);
 
         bot.setNick(nick);
         bot.log("Attempting to connect to %s on port %d...", server, port);
@@ -80,7 +80,7 @@ final class Connection {
 
             else if (messageSplit[1].equals("433"))
             {
-                if (StringUtils.toBoolean(bot.getProperty(Property.rename)))
+                if (bot.toBoolean(Property.rename))
                 {
                     bot.logError("Nick already in use (Trying another one!)");
                     bot.setNick(nick += "_");
@@ -98,9 +98,7 @@ final class Connection {
         if (!bot.isUser(bot.getNick()))
             bot.addUser(bot);
 
-        if (!bot.getProperty(Property.timeoutDelay).matches("\\d+"))
-            bot.setProperty(Property.timeoutDelay, 240000);
-        socket.setSoTimeout(Integer.parseInt(bot.getProperty(Property.timeoutDelay)));
+        socket.setSoTimeout(bot.toInteger(Property.timeoutDelay));
 
         input.start();
         output.start();
@@ -127,17 +125,24 @@ final class Connection {
 
     void handleServerLine(String line)
     {
-        bot.log(0, line);
         if (line.startsWith("PING"))
         {
+            if (bot.toBoolean(Property.logPings))
+                bot.log(0, line);
             output.sendLine("PONG " + line.substring(5));
             for (Listener listener : bot.getListeners())
+            {
                 if (listener instanceof PingListener)
                     ((PingListener) listener).onPing(bot);
+                if (listener instanceof PingEvent.Listener)
+                    ((PingEvent.Listener) listener).onPing(new PingEvent(bot));
+            }
         }
 
         else if (line.startsWith("ERROR"))
         {
+            if (bot.toBoolean(Property.logGeneric))
+                bot.log(0, line);
             active = false;
             bot.disconnect(line.substring(7));
         }
@@ -151,44 +156,64 @@ final class Connection {
             switch (lineSplit[1])
             {
                 case "PRIVMSG":
-                    this.PRIVMSG(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logMessages))
+                        bot.log(0, line);
+                    this.onPRIVMSG(source, lineSplit);
+                    return;
 
                 case "JOIN":
-                    this.JOIN(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logJoins))
+                        bot.log(0, line);
+                    this.onJOIN(source, lineSplit);
+                    return;
 
                 case "PART":
-                    this.PART(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logParts))
+                        bot.log(0, line);
+                    this.onPART(source, lineSplit);
+                    return;
 
                 case "NICK":
-                    this.NICK(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logNicks))
+                        bot.log(0, line);
+                    this.onNICK(source, lineSplit);
+                    return;
 
                 case "QUIT":
-                    this.QUIT(source, lineSplit);
+                    if (bot.toBoolean(Property.logQuits))
+                        bot.log(0, line);
+                    this.onQUIT(source, lineSplit);
                     break;
 
                 case "MODE":
-                    this.MODE(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logModes))
+                        bot.log(0, line);
+                    this.onMODE(source, lineSplit);
+                    return;
 
                 case "NOTICE":
-                    this.NOTICE(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logNotices))
+                        bot.log(0, line);
+                    this.onNOTICE(source, lineSplit);
+                    return;
 
                 case "KICK":
-                    this.KICK(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logKicks))
+                        bot.log(0, line);
+                    this.onKICK(source, lineSplit);
+                    return;
 
                 case "TOPIC":
-                    this.TOPIC(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logTopics))
+                        bot.log(0, line);
+                    this.onTOPIC(source, lineSplit);
+                    return;
 
                 case "INVITE":
-                    this.INVITE(source, lineSplit);
-                    break;
+                    if (bot.toBoolean(Property.logInvites))
+                        bot.log(0, line);
+                    this.onINVITE(source, lineSplit);
+                    return;
 
                 case "311":
                     this.on311(lineSplit);
@@ -219,12 +244,26 @@ final class Connection {
                     break;
 
                 default:
-                    int ID = Integer.parseInt(lineSplit[1]);
-                    for (Listener listener : bot.getListeners())
-                        if (listener instanceof RawListener)
-                            ((RawListener) listener).onLine(bot, ID, line.substring(line.indexOf("" + ID) + 4));
-                    break;
+                    if (bot.toBoolean(Property.logGeneric))
+                        bot.log(0, line);
+                    if (lineSplit[1].matches("\\d+"))
+                    {
+                        int ID = Integer.parseInt(lineSplit[1]);
+                        for (Listener listener : bot.getListeners())
+                        {
+                            if (listener instanceof RawListener)
+                                ((RawListener) listener).onLine(bot, ID, line.substring(line.indexOf("" + ID) + 4));
+                            if (listener instanceof RawEvent.Listener)
+                                ((RawEvent.Listener) listener).onLine(new RawEvent(bot, ID, line.substring(line.indexOf("" + ID) + 4)));
+                        }
+                    }
+                    else
+                        bot.log("An unknown command was sent by the server (%s)", lineSplit[1]);
+                    return;
             }
+
+            if (bot.toBoolean(Property.logGeneric))
+                bot.log(0, line);
         }
     }
 
@@ -249,7 +288,7 @@ final class Connection {
      * =======================================
      */
 
-    private void PRIVMSG(User source, String[] lineSplit)
+    private void onPRIVMSG(User source, String[] lineSplit)
     {
         String message = StringUtils.compact(lineSplit, 3).substring(1);
 
@@ -285,18 +324,16 @@ final class Connection {
                         ((CTCPListener) listener).onCTCPCommand(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(lineSplit[3].length(), message.length() - 1));
                     if (listener instanceof CTCPEvent.Listener)
                         ((CTCPEvent.Listener) listener).onCTCPCommand(new CTCPEvent(bot, bot.getChannel(lineSplit[2]), source, command, message.substring(lineSplit[3].length(), message.length() - 1)));
-
                 }
             }
-
             return;
         }
 
-        if (message.startsWith(bot.getProperty(Property.prefix)) && StringUtils.toBoolean(bot.getProperty(Property.enableCommands)))
+        if (message.startsWith(bot.getProperty(Property.prefix)) && bot.toBoolean(Property.enableCommands))
         {
             String ID = lineSplit[3].substring(bot.getProperty(Property.prefix).length() + 1).toLowerCase();
 
-            if (!ID.equals("") || (StringUtils.toBoolean(bot.getProperty(Property.allowSeparatePrefix)) && lineSplit.length > 0))
+            if (!ID.equals("") || (bot.toBoolean(Property.allowSeparatePrefix) && lineSplit.length > 0))
             {
                 String[] args;
                 if (ID.equals(""))
@@ -350,7 +387,7 @@ final class Connection {
             }
     }
 
-    private void NOTICE(User source, String[] lineSplit)
+    private void onNOTICE(User source, String[] lineSplit)
     {
         if (lineSplit[2].equals(bot.getNick()))
         {
@@ -375,7 +412,7 @@ final class Connection {
         }
     }
 
-    private void JOIN(User source, String[] lineSplit)
+    private void onJOIN(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         channel.addUser(source);
@@ -399,7 +436,7 @@ final class Connection {
         }
     }
 
-    private void PART(User source, String[] lineSplit)
+    private void onPART(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         if (source.equals(bot))
@@ -416,12 +453,11 @@ final class Connection {
         }
     }
 
-    private void QUIT(User source, String[] lineSplit)
+    private void onQUIT(User source, String[] lineSplit)
     {
         for (Channel channel : bot.getChannels())
             if (channel.contains(source))
                 channel.removeUser(source);
-        bot.removeUser(source.getNick());
 
         for (Listener listener : bot.getListeners())
         {
@@ -432,7 +468,7 @@ final class Connection {
         }
     }
 
-    private void NICK(User source, String[] lineSplit)
+    private void onNICK(User source, String[] lineSplit)
     {
         String oldNick = source.getNick();
         String newNick = lineSplit[2].substring(1);
@@ -455,7 +491,7 @@ final class Connection {
         }
     }
 
-    private void MODE(User source, String[] lineSplit)
+    private void onMODE(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         boolean added = lineSplit[3].startsWith("+");
@@ -501,7 +537,7 @@ final class Connection {
             for (char ID : modes)
             {
                 Mode mode = Mode.getMode(ID);
-                String value = lineSplit.length == i + 1 ? lineSplit[i++] : "";
+                String value = lineSplit.length >= i + 1 ? lineSplit[i++] : "";
 
                 if (mode instanceof Mode.TempMode)
                 {
@@ -561,7 +597,7 @@ final class Connection {
         }
     }
 
-    private void KICK(User source, String[] lineSplit)
+    private void onKICK(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         User user = bot.getUser(lineSplit[3]);
@@ -576,7 +612,7 @@ final class Connection {
         }
     }
 
-    private void TOPIC(User source, String[] lineSplit)
+    private void onTOPIC(User source, String[] lineSplit)
     {
         Channel channel = bot.getChannel(lineSplit[2]);
         String topic = StringUtils.compact(lineSplit, 3).substring(1);
@@ -592,7 +628,7 @@ final class Connection {
         }
     }
 
-    private void INVITE(User source, String[] lineSplit)
+    private void onINVITE(User source, String[] lineSplit)
     {
         for (String chan : StringUtils.compact(lineSplit, 3).substring(1).split(" "))
             for (Listener listener : bot.getListeners())
@@ -726,18 +762,18 @@ final class Connection {
                     {
                         bot.log("An exception (probably) caused by your code has occurred (%s)", e);
                         bot.logError("The bot should continue functioning without problems; however, you may want to try fix the issue.");
-                        if (StringUtils.toBoolean(bot.getProperty(Property.printErrorTrace)))
+                        if (bot.toBoolean(Property.printErrorTrace))
                             e.printStackTrace();
                     }
                 }
                 if (active)
-                    bot.disconnect("Connection closed", StringUtils.toBoolean(bot.getProperty(Property.reconnect)));
+                    bot.disconnect("Connection closed", bot.toBoolean(Property.reconnect));
             }
 
             catch (IOException e)
             {
                 bot.logError("An internal exception has occurred (%s)", e);
-                bot.disconnect("A fatal exception occurred!", StringUtils.toBoolean(bot.getProperty(Property.reconnect)));
+                bot.disconnect("A fatal exception occurred!", bot.toBoolean(Property.reconnect));
             }
         }
     }
@@ -786,7 +822,8 @@ final class Connection {
                 try
                 {
                     writer.println(line);
-                    bot.log(1, line);
+                    if (bot.toBoolean(Property.logOutput))
+                        bot.log(1, line);
                 }
 
                 catch (Exception e)
@@ -824,7 +861,7 @@ final class Connection {
 
                     try
                     {
-                        Thread.sleep(bot.getProperty(Property.messageDelay).matches("\\d+") ? Integer.parseInt(bot.getProperty(Property.messageDelay)) : bot.setProperty(Property.messageDelay, 2400000));
+                        Thread.sleep(bot.toInteger(Property.messageDelay));
                     }
 
                     catch (Exception e)

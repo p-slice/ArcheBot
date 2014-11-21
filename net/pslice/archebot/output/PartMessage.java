@@ -1,9 +1,9 @@
 package net.pslice.archebot.output;
 
+import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
-import net.pslice.archebot.IrcAction;
 
-public final class PartMessage extends IrcAction {
+public final class PartMessage extends ArcheBot.Output {
 
     /*
      * =======================================

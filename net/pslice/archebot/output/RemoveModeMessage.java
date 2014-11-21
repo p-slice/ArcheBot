@@ -2,7 +2,7 @@ package net.pslice.archebot.output;
 
 import net.pslice.archebot.*;
 
-public final class RemoveModeMessage extends IrcAction {
+public final class RemoveModeMessage extends ArcheBot.Output {
 
     /*
      * =======================================

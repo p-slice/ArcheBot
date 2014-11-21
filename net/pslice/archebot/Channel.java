@@ -1,12 +1,15 @@
 package net.pslice.archebot;
 
 import net.pslice.utilities.StringUtils;
+import net.pslice.archebot.Mode.PermaMode;
+import net.pslice.archebot.Mode.TempMode;
+import net.pslice.archebot.Mode.ValueMode;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Channel {
+public class Channel implements Comparable<Channel> {
 
     /*
      * =======================================
@@ -22,13 +25,13 @@ public class Channel {
                      topicSetter = "";
 
     // All users in the channel, and their ranks
-    protected final HashMap<User, Set<Mode.TempMode>> users = new HashMap<>();
+    protected final HashMap<User, Set<TempMode>> users = new HashMap<>();
 
     // All normal modes
-    protected final HashMap<Mode.ValueMode, String> modes = new HashMap<>();
+    protected final HashMap<ValueMode, String> modes = new HashMap<>();
 
     // All permanent modes
-    protected final HashMap<Mode.PermaMode, Set<String>> permaModes = new HashMap<>();
+    protected final HashMap<PermaMode, Set<String>> permaModes = new HashMap<>();
 
     /*
      * =======================================
@@ -55,27 +58,27 @@ public class Channel {
         return users.containsKey(user);
     }
 
-    public String getValue(Mode.ValueMode mode)
+    public String getValue(ValueMode mode)
     {
         return modes.containsKey(mode) ? modes.get(mode) : "";
     }
 
-    public Set<String> getValues(Mode.PermaMode mode)
+    public Set<String> getValues(PermaMode mode)
     {
         return permaModes.get(mode);
     }
 
-    public boolean isArg(Mode.PermaMode mode, String args)
+    public boolean isArg(PermaMode mode, String args)
     {
         return permaModes.get(mode).contains(args);
     }
 
-    public Set<Mode.ValueMode> getModes()
+    public Set<ValueMode> getModes()
     {
         return new HashSet<>(modes.keySet());
     }
 
-    public Set<Mode.TempMode> getModes(User user)
+    public Set<TempMode> getModes(User user)
     {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
     }
@@ -100,7 +103,7 @@ public class Channel {
         return new HashSet<>(users.keySet());
     }
 
-    public Set<User> getUsers(Mode.TempMode mode)
+    public Set<User> getUsers(TempMode mode)
     {
         Set<User> modeUsers = new HashSet<>();
 
@@ -111,12 +114,12 @@ public class Channel {
         return modeUsers;
     }
 
-    public boolean hasMode(Mode.ValueMode mode)
+    public boolean hasMode(ValueMode mode)
     {
         return modes.containsKey(mode);
     }
 
-    public boolean hasMode(User user, Mode.TempMode mode)
+    public boolean hasMode(User user, TempMode mode)
     {
         return users.containsKey(user) && users.get(user).contains(mode);
     }
@@ -126,7 +129,7 @@ public class Channel {
         return users.size();
     }
 
-    public int totalUsers(Mode.TempMode mode)
+    public int totalUsers(TempMode mode)
     {
         int size = 0;
             for (User user : users.keySet())
@@ -151,14 +154,21 @@ public class Channel {
     {
         int i;
         return  name +
-                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") +"}" : "") +
-                ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
+                (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") + "}" : "") +
+                ((i = totalUsers(Mode.owner))   > 0 ? " {OWNERS:"   + i + "}" : "") +
                 ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
+                ((i = totalUsers(Mode.op))      > 0 ? " {OPS:"      + i + "}" : "") +
+                ((i = totalUsers(Mode.halfOp))  > 0 ? " {HALFOPS:"  + i + "}" : "") +
+                ((i = totalUsers(Mode.voice))   > 0 ? " {VOICED:"   + i + "}" : "") +
                 " {TOTAL USERS:" + totalUsers() + "}" +
                 " {TOPIC:" + topic + "}";
+    }
+
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public int compareTo(Channel channel)
+    {
+        return name.toLowerCase().compareTo(channel.name.toLowerCase());
     }
 
     /*
@@ -169,7 +179,7 @@ public class Channel {
 
     void addUser(User user)
     {
-        users.put(user, new HashSet<Mode.TempMode>());
+        users.put(user, new HashSet<TempMode>());
     }
 
     void removeUser(User user)
@@ -177,29 +187,29 @@ public class Channel {
         users.remove(user);
     }
 
-    void addMode(User user, Mode.TempMode mode)
+    void addMode(User user, TempMode mode)
     {
         users.get(user).add(mode);
     }
 
-    void removeMode(User user, Mode.TempMode mode)
+    void removeMode(User user, TempMode mode)
     {
         users.get(user).remove(mode);
     }
 
     void addMode(Mode mode, String value)
     {
-        if (mode instanceof Mode.ValueMode)
-            modes.put((Mode.ValueMode) mode, value);
-        else if (mode instanceof Mode.PermaMode)
+        if (mode instanceof ValueMode)
+            modes.put((ValueMode) mode, value);
+        else if (mode instanceof PermaMode)
             permaModes.get(mode).add(value);
     }
 
     void removeMode(Mode mode, String args)
     {
-        if (mode instanceof Mode.ValueMode)
+        if (mode instanceof ValueMode)
             modes.remove(mode);
-        else if (mode instanceof Mode.PermaMode)
+        else if (mode instanceof PermaMode)
             permaModes.get(mode).remove(args);
     }
 

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class User {
+public class User implements Comparable<User> {
 
     /*
      * =======================================
@@ -119,6 +119,13 @@ public class User {
     public String toString()
     {
         return nick + (login.equals("") ? "" : "!" + login) + (hostmask.equals("") ? "" : "@" + hostmask);
+    }
+
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public int compareTo(User user)
+    {
+        return nick.toLowerCase().compareTo(user.nick.toLowerCase());
     }
 
     /*
