@@ -41,9 +41,9 @@ public class StaticChannel {
         this.topicSetter = channel.getTopicSetter();
         for (Mode.ValueMode mode : channel.getModes())
             modes.put(mode, channel.getValue(mode));
-        permaModes.put(Mode.ban, channel.getValues(Mode.ban));
-        permaModes.put(Mode.exempt, channel.getValues(Mode.exempt));
-        permaModes.put(Mode.invited, channel.getValues(Mode.invited));
+        for (Mode mode : Mode.getModes())
+            if (mode instanceof Mode.PermaMode)
+                permaModes.put((Mode.PermaMode) mode, channel.getValues((Mode.PermaMode) mode));
         for (User user : channel.getUsers())
             users.put(user, channel.getModes(user));
     }
@@ -148,14 +148,14 @@ public class StaticChannel {
     @Override
     public String toString()
     {
-        int i;
+        String modeUsers = "";
+        for (Mode mode : Mode.getModes())
+            if (mode instanceof Mode.TempMode)
+                if (getUsers((Mode.TempMode) mode).size() > 0)
+                    modeUsers += " {" + mode + ":" + getUsers((Mode.TempMode) mode).size() + "}";
         return  name +
                 (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") + "}" : "") +
-                ((i = totalUsers(Mode.owner)) > 0 ? " {OWNERS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.op)) > 0 ? " {OPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.halfOp)) > 0 ? " {HALFOPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.voice)) > 0 ? " {VOICED:" + i + "}" : "") +
+                modeUsers +
                 " {TOTAL USERS:" + totalUsers() + "}" +
                 " {TOPIC:" + topic + "}";
     }

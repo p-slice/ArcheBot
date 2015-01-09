@@ -78,21 +78,21 @@ final class Connection {
             if (messageSplit[1].equals("004"))
                 break;
 
-            else if (messageSplit[1].equals("433"))
+            else if (messageSplit[1].matches("43[367]"))
             {
                 if (bot.toBoolean(Property.rename))
                 {
-                    bot.logError("Nick already in use (Trying another one!)");
+                    bot.logError("Nick rejected (Trying another one!)");
                     bot.setNick(nick += "_");
                     output.sendLine("NICK " + bot.getNick());
                 }
 
                 else
-                    throw new ConnectionException("Nick already in use!");
+                    throw new ConnectionException("Nick unavailable!");
             }
 
-            else if (messageSplit[1].startsWith("4") || messageSplit[1].startsWith("5"))
-                throw new ConnectionException(StringUtils.compact(messageSplit, 3).substring(1));
+            else if (messageSplit[1].matches("[45]\\d\\d"))
+                throw new ConnectionException(StringUtils.compact(messageSplit, 3));
         }
         active = true;
         if (!bot.isUser(bot.getNick()))
@@ -215,8 +215,19 @@ final class Connection {
                     this.onINVITE(source, lineSplit);
                     return;
 
+                case "004":
+                    this.on004(lineSplit);
+                    break;
+
+                case "005":
+                    this.on005(lineSplit);
+                    break;
+
                 case "311":
-                    this.on311(lineSplit);
+                    User user = bot.getUser(lineSplit[3]);
+                    user.setLogin(lineSplit[4]);
+                    user.setHostmask(lineSplit[5]);
+                    user.setRealname(StringUtils.compact(lineSplit, 7).substring(1));
                     break;
 
                 case "312":
@@ -224,11 +235,14 @@ final class Connection {
                     break;
 
                 case "322":
-                    this.on322(lineSplit);
+                    if (bot.getChannel(lineSplit[3]).totalUsers() != Integer.parseInt(lineSplit[4]))
+                        bot.send(new RawMessage("WHO " + lineSplit[3]));
                     break;
 
                 case "324":
-                    this.on324(lineSplit);
+                    Channel channel = bot.getChannel(lineSplit[3]);
+                    for (char ID : lineSplit[4].substring(1).toCharArray())
+                        channel.addMode(Mode.getMode(ID), "");
                     break;
 
                 case "332":
@@ -258,7 +272,7 @@ final class Connection {
                         }
                     }
                     else
-                        bot.log("An unknown command was sent by the server (%s)", lineSplit[1]);
+                        bot.log("An unknown command was sent by the server (%s).", lineSplit[1]);
                     return;
             }
 
@@ -352,18 +366,36 @@ final class Connection {
                 if (bot.isRegistered(ID))
                 {
                     Channel channel = bot.getChannel(lineSplit[2].equals(bot.getNick()) ? source.getNick() : lineSplit[2]);
+                    boolean hasCommandListener = false;
 
                     for (Listener listener : bot.getListeners())
                     {
                         if (listener instanceof CommandListener)
+                        {
                             ((CommandListener) listener).onCommand(bot, channel, source, bot.getCommand(ID), args);
+                            hasCommandListener = true;
+                        }
                         if (listener instanceof CommandEvent.Listener)
+                        {
                             ((CommandEvent.Listener) listener).onCommand(new CommandEvent(bot, channel, source, bot.getCommand(ID), args));
+                            hasCommandListener = true;
+                        }
+                    }
+
+                    if (!hasCommandListener)
+                    {
+                        Command command = bot.getCommand(ID);
+                        if (!command.isEnabled() && !source.hasPermission(User.Permission.OPERATOR))
+                            bot.send(new ErrorMessage(source, "That command is not currently enabled."));
+                        else if (source.hasPermission(command.getPermission()) || source.hasPermission(User.Permission.OPERATOR))
+                            command.execute(bot, channel, source, args);
+                        else
+                            bot.send(new ErrorMessage(source, "You do not have permission to do that. (Required permission: %s)", command.getPermission()));
                     }
                 }
 
                 else
-                    bot.send(new ErrorMessage(source, "The command ID '%s' is not registered!", ID));
+                    bot.send(new ErrorMessage(source, "The command ID '%s' is not registered.", ID));
                 return;
             }
         }
@@ -466,6 +498,11 @@ final class Connection {
             if (listener instanceof QuitEvent.Listener)
                 ((QuitEvent.Listener) listener).onQuit(new QuitEvent(bot, source, lineSplit.length > 3 ? StringUtils.compact(lineSplit, 3).substring(1) : ""));
         }
+
+        source.setLogin("");
+        source.setHostmask("");
+        source.setRealname("");
+        source.setServer("");
     }
 
     private void onNICK(User source, String[] lineSplit)
@@ -502,7 +539,7 @@ final class Connection {
             added = lineSplit[3].startsWith(":+");
             for (char ID : modes)
             {
-                if (ID == '+' || ID == '-')
+                if (!User.Mode.isMode(ID))
                     continue;
                 User.Mode mode = User.Mode.getMode(ID);
 
@@ -536,6 +573,8 @@ final class Connection {
             int i = 4;
             for (char ID : modes)
             {
+                if (!Mode.isMode(ID))
+                    continue;
                 Mode mode = Mode.getMode(ID);
                 String value = lineSplit.length >= i + 1 ? lineSplit[i++] : "";
 
@@ -640,13 +679,6 @@ final class Connection {
             }
     }
 
-    private void on322(String[] lineSplit)
-    {
-        Channel channel = bot.getChannel(lineSplit[3]);
-        if (channel.totalUsers() != Integer.parseInt(lineSplit[4]))
-            bot.send(new RawMessage("WHO " + channel.name));
-    }
-
     private void on352(String[] lineSplit)
     {
         User user = bot.getUser(lineSplit[7]);
@@ -663,51 +695,50 @@ final class Connection {
             channel.addUser(user);
 
         for (char c : lineSplit[8].toCharArray())
-            switch (c)
+            for (Mode mode : Mode.getModes())
+                if (mode instanceof Mode.TempMode && ((Mode.TempMode) mode).getPrefix() == c)
+                    channel.addMode(user, (Mode.TempMode) mode);
+    }
+
+    private void on004(String[] lineSplit)
+    {
+        char[] userModes = lineSplit[5].toCharArray();
+        for (char mode : userModes)
+            new User.Mode(mode);
+    }
+
+    private void on005(String[] lineSplit)
+    {
+        for (String arg : lineSplit)
+        {
+            if (arg.startsWith("CHANMODES="))
             {
-                case '~':
-                    if (!channel.hasMode(user, Mode.owner))
-                        channel.addMode(user, Mode.owner);
-                    break;
-
-                case '&':
-                    if (!channel.hasMode(user, Mode.superOp))
-                        channel.addMode(user, Mode.superOp);
-                    break;
-
-                case '@':
-                    if (!channel.hasMode(user, Mode.op))
-                        channel.addMode(user, Mode.op);
-                    break;
-
-                case '%':
-                    if (!channel.hasMode(user, Mode.halfOp))
-                        channel.addMode(user, Mode.halfOp);
-                    break;
-
-                case '+':
-                    if (!channel.hasMode(user, Mode.voice))
-                        channel.addMode(user, Mode.voice);
-                    break;
-
-                default:
-                    break;
+                String[] modes = arg.split("=")[1].split(",");
+                for (char mode : modes[0].toCharArray())
+                    new Mode.PermaMode(mode);
+                for (char mode : StringUtils.compact(modes, 1, "").toCharArray())
+                    new Mode.ValueMode(mode);
             }
-    }
 
-    private void on324(String[] lineSplit)
-    {
-        Channel channel = bot.getChannel(lineSplit[3]);
-        for (char ID : lineSplit[4].substring(1).toCharArray())
-            channel.addMode(Mode.getMode(ID), "");
-    }
+            else if (arg.startsWith("PREFIX="))
+            {
+                String[] prefixSplit = arg.split("=")[1].split("\\)");
+                char[] modes = prefixSplit[0].substring(1).toCharArray(),
+                       prefixes = prefixSplit[1].toCharArray();
+                if (modes.length != prefixes.length)
+                    return;
+                for (int i = 0; i < modes.length; i++)
+                    new Mode.TempMode(modes[i], prefixes[i]);
+            }
 
-    private void on311(String[] lineSplit)
-    {
-        User user = bot.getUser(lineSplit[3]);
-        user.setLogin(lineSplit[4]);
-        user.setHostmask(lineSplit[5]);
-        user.setRealname(StringUtils.compact(lineSplit, 7).substring(1));
+            else
+            {
+                String[] info = arg.split("=");
+                String value = info.length > 1 ? info[1] : "";
+                bot.setServerInfo(info[0], value);
+            }
+
+        }
     }
 
     /*
@@ -812,7 +843,7 @@ final class Connection {
 
         void sendLine(String line)
         {
-            if (line == null || line.equals(""))
+            if (line == null || line.isEmpty())
                 return;
             if (line.length() > 510)
                 line = line.substring(0, 510);
@@ -821,7 +852,7 @@ final class Connection {
             {
                 try
                 {
-                    writer.println(line);
+                    writer.println(line.replace("\\&", "\000").replace("&r", "\017").replace("&b", "\002").replace("&", "\003").replace("\000", "&"));
                     if (bot.toBoolean(Property.logOutput))
                         bot.log(1, line);
                 }

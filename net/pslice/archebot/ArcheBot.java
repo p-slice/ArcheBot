@@ -6,7 +6,7 @@ import net.pslice.archebot.output.JoinMessage;
 import net.pslice.archebot.output.NickservMessage;
 import net.pslice.archebot.listeners.ConnectionListener;
 import net.pslice.pml.PMLFile;
-import net.pslice.pml.PMLTitle;
+import net.pslice.pml.PMLObject;
 import net.pslice.utilities.FileManager;
 import net.pslice.utilities.StringUtils;
 
@@ -24,7 +24,7 @@ public class ArcheBot extends User {
      */
 
     // The current version of ArcheBot
-    public static final String VERSION = "1.10";
+    public static final String VERSION = "1.11";
 
     // Users may set this for usage in their own code
     public static String USER_VERSION = "";
@@ -43,6 +43,9 @@ public class ArcheBot extends User {
 
     // All registered commands
     private final HashMap<String, Command> commands = new HashMap<>();
+
+    // Server information
+    private final HashMap<String, String> serverInfo = new HashMap<>();
 
     // The file manager used for loading/saving files
     private final FileManager fileManager;
@@ -98,46 +101,33 @@ public class ArcheBot extends User {
             this.reload();
             try
             {
-                if (this.checkEmpty(Property.nick))
-                    this.logError("Unable to connect (No nick provided)");
-                else if (this.checkEmpty(Property.server))
-                    this.logError("Unable to connect (No server provided)");
-                else if (!this.getProperty(Property.port).matches("\\d+"))
-                    this.logError("Unable to connect (Port can only contain digits)");
-                else
+                connection = new Connection(this);
+                connectTime = System.currentTimeMillis();
+
+                if (!this.getProperty(Property.nickservPass).isEmpty())
                 {
-                    if (this.checkEmpty(Property.login))
-                        this.setProperty(Property.login, this.getProperty(Property.nick));
-                    if (this.checkEmpty(Property.realname))
-                        this.setProperty(Property.realname, Property.realname.defaultValue);
+                    if (this.getProperty(Property.nickservID).isEmpty())
+                        this.send(new NickservMessage(this.getProperty(Property.nickservPass)));
+                    else
+                        this.send(new NickservMessage(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
+                }
 
-                    connection = new Connection(this);
-                    connectTime = System.currentTimeMillis();
-
-                    if (!this.checkEmpty(Property.nickservPass))
-                    {
-                        if (this.checkEmpty(Property.nickservID))
-                            this.send(new NickservMessage(this.getProperty(Property.nickservPass)));
-                        else
-                            this.send(new NickservMessage(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
-                    }
-
+                if (!this.getProperty(Property.channels).isEmpty())
                     for (String channel : StringUtils.breakList(this.getProperty(Property.channels)))
                         this.send(new JoinMessage(channel));
 
-                    for (Listener listener : listeners)
-                    {
-                        if (listener instanceof ConnectionListener)
-                            ((ConnectionListener) listener).onConnect(this);
-                        if (listener instanceof ConnectEvent.Listener)
-                            ((ConnectEvent.Listener) listener).onConnect(new ConnectEvent(this));
-                    }
+                for (Listener listener : listeners)
+                {
+                    if (listener instanceof ConnectionListener)
+                        ((ConnectionListener) listener).onConnect(this);
+                    if (listener instanceof ConnectEvent.Listener)
+                        ((ConnectEvent.Listener) listener).onConnect(new ConnectEvent(this));
                 }
             }
 
             catch (Connection.ConnectionException e)
             {
-                this.logError("Connection refused (%s)", e);
+                this.logError("Connection refused (%s)", e.getMessage());
             }
 
             catch (Exception e)
@@ -187,11 +177,11 @@ public class ArcheBot extends User {
             connection.close();
             connection = null;
 
-            data.getSubtitle("permissions").clearSubtitles();
+            data.getChild("permissions").removeChildren();
             for (User user : this.getUsers())
                 for (User.Permission permission : user.getPermissions())
                     if (!permission.equals(User.Permission.DEFAULT))
-                        data.getSubtitle("permissions/" + user.getNick() + "/" + permission);
+                        data.getChild("permissions/" + user.getNick() + "/" + permission);
             data.save();
 
             users.clear();
@@ -243,7 +233,9 @@ public class ArcheBot extends User {
 
     public String getProperty(Property property)
     {
-        return data.getSubtitle("properties/" + property).getText();
+        if (data.getChild("properties/" + property).getText().equals("") && !property.allowEmpty)
+            this.setProperty(property, property.defaultValue);
+        return data.getChild("properties/" + property).getText();
     }
 
     public Set<String> getRegisteredCommandIDs()
@@ -254,6 +246,11 @@ public class ArcheBot extends User {
     public long getRuntime()
     {
         return System.currentTimeMillis() - startTime;
+    }
+
+    public String getServerInfo(String info)
+    {
+        return serverInfo.containsKey(info) ? serverInfo.get(info) : null;
     }
 
     public long getUptime()
@@ -336,16 +333,16 @@ public class ArcheBot extends User {
         if (new File(fileManager.getDirectory()).mkdir())
             this.log("New directory created.");
         data = new PMLFile("bot", fileManager.getDirectory());
-        PMLTitle properties = data.getSubtitle("properties");
+        PMLObject properties = data.getChild("properties");
 
         for (Property property : Property.values())
-            if (!properties.isSubtitle("" + property))
+            if (!properties.isChild("" + property))
                 this.setProperty(property, property.defaultValue);
 
         for (User user : this.getUsers())
             user.resetPermissions();
-        for (PMLTitle user : data.getSubtitle("permissions").getSubtitles())
-            for (PMLTitle permission : user.getSubtitles())
+        for (PMLObject user : data.getChild("permissions").getChildren())
+            for (PMLObject permission : user.getChildren())
                 this.getUser(user.getTitle()).givePermission(User.Permission.generate(permission.getTitle().matches("\\d+") ? permission.getText() : permission.getTitle()));
 
         data.save();
@@ -390,7 +387,7 @@ public class ArcheBot extends User {
 
     public Object setProperty(Property property, Object value)
     {
-        data.getSubtitle("properties/" + property).setText("" + value);
+        data.getChild("properties/" + property).setText("" + value);
         return value;
     }
 
@@ -447,6 +444,11 @@ public class ArcheBot extends User {
             users.remove(nick);
     }
 
+    void setServerInfo(String info, String value)
+    {
+        serverInfo.put(info, value);
+    }
+
     boolean toBoolean(Property property)
     {
         return StringUtils.toBoolean(this.getProperty(property));
@@ -457,17 +459,6 @@ public class ArcheBot extends User {
         return this.getProperty(property).matches("\\d+") ?
                 Integer.parseInt(this.getProperty(property)) :
                 (int) this.setProperty(property, property.defaultValue);
-    }
-
-    /*
-     * =======================================
-     * Private methods:
-     * =======================================
-     */
-
-    private boolean checkEmpty(Property property)
-    {
-        return this.getProperty(property).equals("");
     }
 
     /*
@@ -484,38 +475,38 @@ public class ArcheBot extends User {
          * =======================================
          */
 
-        nick                ("nick",                "ArcheBot"),
-        login               ("login",               "ArcheBot"),
-        realname            ("realname",            "ArcheBot (Version {VERSION}) by p_slice"),
-        server              ("server",              "irc.esper.net"),
-        serverPass          ("serverPass",          ""),
-        port                ("port",                6667),
-        messageDelay        ("messageDelay",        1000),
-        nickservID          ("nickservID",          ""),
-        nickservPass        ("nickservPass",        ""),
-        prefix              ("prefix",              "+"),
-        allowSeparatePrefix ("allowSeparatePrefix", false),
-        enableCommands      ("enableCommands",      true),
-        channels            ("channels",            "#PotatoBot"),
-        printErrorTrace     ("printErrorTrace",     true),
-        rename              ("rename",              false),
-        reconnect           ("reconnect",           false),
-        reconnectDelay      ("reconnectDelay",      60000),
-        timeoutDelay        ("timeoutDelay",        240000),
-        verbose             ("verbose",             true),
-        logPings            ("verbose/logPings",    true),
-        logMessages         ("verbose/logMessages", true),
-        logNotices          ("verbose/logNotices",  true),
-        logNicks            ("verbose/logNicks",    true),
-        logTopics           ("verbose/logTopics",   true),
-        logJoins            ("verbose/logJoins",    true),
-        logParts            ("verbose/logParts",    true),
-        logQuits            ("verbose/logQuits",    true),
-        logKicks            ("verbose/logKicks",    true),
-        logModes            ("verbose/logModes",    true),
-        logInvites          ("verbose/logInvites",  true),
-        logGeneric          ("verbose/logGeneric",  true),
-        logOutput           ("verbose/logOutput",   true);
+        nick                ("nick",                false, "ArcheBot"),
+        login               ("login",               false, "ArcheBot"),
+        realname            ("realname",            false, "ArcheBot (Version {VERSION}) by p_slice"),
+        server              ("server",              false, "irc.esper.net"),
+        serverPass          ("serverPass",          true,  ""),
+        port                ("port",                false, 6667),
+        messageDelay        ("messageDelay",        false, 1000),
+        nickservID          ("nickservID",          true,  ""),
+        nickservPass        ("nickservPass",        true,  ""),
+        prefix              ("prefix",              false, "+"),
+        allowSeparatePrefix ("allowSeparatePrefix", false, false),
+        enableCommands      ("enableCommands",      false, true),
+        channels            ("channels",            true,  "#PotatoBot"),
+        printErrorTrace     ("printErrorTrace",     false, true),
+        rename              ("rename",              false, false),
+        reconnect           ("reconnect",           false, false),
+        reconnectDelay      ("reconnectDelay",      false, 60000),
+        timeoutDelay        ("timeoutDelay",        false, 240000),
+        verbose             ("verbose",             false, true),
+        logPings            ("verbose/logPings",    false, true),
+        logMessages         ("verbose/logMessages", false, true),
+        logNotices          ("verbose/logNotices",  false, true),
+        logNicks            ("verbose/logNicks",    false, true),
+        logTopics           ("verbose/logTopics",   false, true),
+        logJoins            ("verbose/logJoins",    false, true),
+        logParts            ("verbose/logParts",    false, true),
+        logQuits            ("verbose/logQuits",    false, true),
+        logKicks            ("verbose/logKicks",    false, true),
+        logModes            ("verbose/logModes",    false, true),
+        logInvites          ("verbose/logInvites",  false, true),
+        logGeneric          ("verbose/logGeneric",  false, true),
+        logOutput           ("verbose/logOutput",   false, true);
 
         /*
          * =======================================
@@ -523,7 +514,11 @@ public class ArcheBot extends User {
          * =======================================
          */
 
+        // The name of the property
         private final String name;
+        // Whether or not the property allows empty values
+        private final boolean allowEmpty;
+        // The default value of the property
         private final Object defaultValue;
 
         /*
@@ -532,9 +527,10 @@ public class ArcheBot extends User {
          * =======================================
          */
 
-        private Property(String name, Object defaultValue)
+        private Property(String name, boolean allowEmpty, Object defaultValue)
         {
             this.name = name;
+            this.allowEmpty = allowEmpty;
             this.defaultValue = defaultValue;
         }
 
@@ -589,31 +585,33 @@ public class ArcheBot extends User {
     public static class Event<B extends ArcheBot>
     {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
+       /*
+        * =======================================
+        * Objects and variables:
+        * =======================================
+        */
 
+        // The bot associated with the event
         private final B bot;
+        // The time the event occurred at
         private final long timeStamp = System.currentTimeMillis();
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
+       /*
+        * =======================================
+        * Constructors:
+        * =======================================
+        */
 
         protected Event(B bot)
         {
             this.bot = bot;
         }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
+       /*
+        * =======================================
+        * Public methods:
+        * =======================================
+        */
 
         public B getBot()
         {

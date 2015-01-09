@@ -18,6 +18,6 @@ public final class ErrorMessage extends ArcheBot.Output {
 
     public ErrorMessage(String target, String error, Object... objects)
     {
-        super("NOTICE " + target + " :\u00034Error\u000F: " + String.format(error, objects));
+        super("NOTICE " + target + " :&b&4Error&r: " + String.format(error, objects));
     }
 }

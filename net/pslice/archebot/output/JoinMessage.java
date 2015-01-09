@@ -16,8 +16,18 @@ public final class JoinMessage extends ArcheBot.Output {
         this(channel.name);
     }
 
+    public JoinMessage(Channel channel, String key)
+    {
+        this(channel.name, key);
+    }
+
     public JoinMessage(String channel)
     {
         super("JOIN " + channel);
+    }
+
+    public JoinMessage(String channel, String key)
+    {
+        super("JOIN " + channel + " " + key);
     }
 }

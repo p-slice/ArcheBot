@@ -183,11 +183,14 @@ public class User implements Comparable<User> {
          * =======================================
          */
 
+        // All permissions
         private static final HashMap<String, Permission> permissions = new HashMap<>();
 
+        // Pre-defined permissions
         public static final Permission DEFAULT  = new Permission("permission.default"),
                                        OPERATOR = new Permission("permission.operator");
 
+        // The ID of the permission
         private final String ID;
 
         /*
@@ -242,27 +245,17 @@ public class User implements Comparable<User> {
         }
     }
 
-    public static enum Mode
+    public static class Mode
     {
-        /*
-         * =======================================
-         * Enum values:
-         * =======================================
-         */
-
-        away('a'),
-        deaf('D'),
-        invisible('i'),
-        operator('o'),
-        viewWallops('w'),
-        ssl('Z');
-
         /*
          * =======================================
          * Objects and variables:
          * =======================================
          */
 
+        // All user modes
+        private static final HashSet<Mode> modes = new HashSet<>();
+        // The ID of the mode
         private final char ID;
 
         /*
@@ -271,9 +264,10 @@ public class User implements Comparable<User> {
          * =======================================
          */
 
-        private Mode(char ID)
+        Mode(char ID)
         {
             this.ID = ID;
+            modes.add(this);
         }
 
         /*
@@ -296,10 +290,18 @@ public class User implements Comparable<User> {
 
         public static Mode getMode(char ID)
         {
-            for (Mode mode : Mode.values())
+            for (Mode mode : modes)
                 if (mode.ID == ID)
                     return mode;
             return null;
+        }
+
+        public static boolean isMode(char ID)
+        {
+            for (Mode mode : modes)
+                if (mode.ID == ID)
+                    return true;
+            return false;
         }
     }
 }

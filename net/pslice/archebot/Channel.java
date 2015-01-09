@@ -42,9 +42,9 @@ public class Channel implements Comparable<Channel> {
     Channel(String name)
     {
         this.name = name;
-        permaModes.put(Mode.ban, new HashSet<String>());
-        permaModes.put(Mode.exempt, new HashSet<String>());
-        permaModes.put(Mode.invited, new HashSet<String>());
+        for (Mode mode : Mode.getModes())
+            if (mode instanceof Mode.PermaMode)
+                permaModes.put((PermaMode) mode, new HashSet<String>());
     }
 
     /*
@@ -132,9 +132,9 @@ public class Channel implements Comparable<Channel> {
     public int totalUsers(TempMode mode)
     {
         int size = 0;
-            for (User user : users.keySet())
-                if (this.hasMode(user, mode))
-                    size++;
+        for (User user : users.keySet())
+            if (this.hasMode(user, mode))
+                size++;
         return size;
     }
 
@@ -152,14 +152,14 @@ public class Channel implements Comparable<Channel> {
     @Override
     public String toString()
     {
-        int i;
+        String modeUsers = "";
+        for (Mode mode : Mode.getModes())
+            if (mode instanceof TempMode)
+                if (getUsers((TempMode) mode).size() > 0)
+                    modeUsers += " {" + mode + ":" + getUsers((TempMode) mode).size() + "}";
         return  name +
                 (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") + "}" : "") +
-                ((i = totalUsers(Mode.owner))   > 0 ? " {OWNERS:"   + i + "}" : "") +
-                ((i = totalUsers(Mode.superOp)) > 0 ? " {SUPEROPS:" + i + "}" : "") +
-                ((i = totalUsers(Mode.op))      > 0 ? " {OPS:"      + i + "}" : "") +
-                ((i = totalUsers(Mode.halfOp))  > 0 ? " {HALFOPS:"  + i + "}" : "") +
-                ((i = totalUsers(Mode.voice))   > 0 ? " {VOICED:"   + i + "}" : "") +
+                modeUsers +
                 " {TOTAL USERS:" + totalUsers() + "}" +
                 " {TOPIC:" + topic + "}";
     }
@@ -189,12 +189,14 @@ public class Channel implements Comparable<Channel> {
 
     void addMode(User user, TempMode mode)
     {
-        users.get(user).add(mode);
+        if (users.containsKey(user) && !users.get(user).contains(mode))
+            users.get(user).add(mode);
     }
 
     void removeMode(User user, TempMode mode)
     {
-        users.get(user).remove(mode);
+        if (users.containsKey(user) && users.get(user).contains(mode))
+            users.get(user).remove(mode);
     }
 
     void addMode(Mode mode, String value)
