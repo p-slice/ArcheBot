@@ -5,53 +5,25 @@ import net.pslice.archebot.User;
 
 public class PrivateActionEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final User user;
     private final String action;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public PrivateActionEvent(B bot, User user, String action)
-    {
+    public PrivateActionEvent(B bot, User user, String action) {
         super(bot);
 
         this.user = user;
         this.action = action;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    public String getAction()
-    {
+    public String getAction() {
         return action;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onPrivateAction(PrivateActionEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onPrivateAction(PrivateActionEvent<B> event);
     }
 }

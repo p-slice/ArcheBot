@@ -6,53 +6,25 @@ import net.pslice.archebot.User;
 
 public class InviteEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
     private final User user;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public InviteEvent(B bot, Channel channel, User user)
-    {
+    public InviteEvent(B bot, Channel channel, User user) {
         super(bot);
 
         this.channel = channel;
         this.user = user;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onInvite(InviteEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onInvite(InviteEvent<B> event);
     }
 }

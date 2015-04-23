@@ -6,25 +6,11 @@ import net.pslice.archebot.User;
 
 public class CTCPEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
     private final User user;
-    private final String command,
-                         args;
+    private final String command, args;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public CTCPEvent(B bot, Channel channel, User user, String command, String args)
-    {
+    public CTCPEvent(B bot, Channel channel, User user, String command, String args) {
         super(bot);
 
         this.channel = channel;
@@ -33,40 +19,23 @@ public class CTCPEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.args = args;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    public String getCommand()
-    {
+    public String getCommand() {
         return command;
     }
 
-    public String getArgs()
-    {
+    public String getArgs() {
         return args;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onCTCPCommand(CTCPEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onCTCPCommand(CTCPEvent<B> event);
     }
 }

@@ -4,25 +4,12 @@ import net.pslice.archebot.*;
 
 public class CommandEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
     private final User user;
     private final Command<B> command;
     private final String[] args;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public CommandEvent(B bot, Channel channel, User user, Command<B> command, String[] args)
-    {
+    public CommandEvent(B bot, Channel channel, User user, Command<B> command, String[] args) {
         super(bot);
 
         this.channel = channel;
@@ -31,40 +18,23 @@ public class CommandEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.args = args;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    public Command<B> getCommand()
-    {
+    public Command<B> getCommand() {
         return command;
     }
 
-    public String[] getArgs()
-    {
+    public String[] getArgs() {
         return args;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onCommand(CommandEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onCommand(CommandEvent<B> event);
     }
 }

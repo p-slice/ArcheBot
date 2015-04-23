@@ -4,147 +4,79 @@ import net.pslice.archebot.events.ConnectEvent;
 import net.pslice.archebot.events.DisconnectEvent;
 import net.pslice.archebot.output.JoinMessage;
 import net.pslice.archebot.output.NickservMessage;
-import net.pslice.archebot.listeners.ConnectionListener;
-import net.pslice.pml.PMLFile;
-import net.pslice.pml.PMLObject;
-import net.pslice.utilities.FileManager;
+import net.pslice.archebot.handlers.ConnectionHandler;
+import net.pslice.pml.PMLElement;
 import net.pslice.utilities.StringUtils;
 
-import java.io.File;
-import java.io.PrintStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class ArcheBot extends User {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    // The current version of ArcheBot
-    public static final String VERSION = "1.11";
-
-    // Users may set this for usage in their own code
+    public static final String VERSION = "1.12";
     public static String USER_VERSION = "";
-
-    // The format of the date in the bot's output log
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
-
-    // All registered event listeners
-    private final Set<Listener> listeners = new HashSet<>();
-
-    // All currently known channels
+    private final Set<Handler> handlers = new HashSet<>();
     private final HashMap<String, Channel> channels = new HashMap<>();
-
-    // All currently known users
     private final HashMap<String, User> users = new HashMap<>();
-
-    // All registered commands
     private final HashMap<String, Command> commands = new HashMap<>();
-
-    // Server information
     private final HashMap<String, String> serverInfo = new HashMap<>();
-
-    // The file manager used for loading/saving files
-    private final FileManager fileManager;
-
-    // The time the bot was created, used for calculating runtime
     private final long startTime = System.currentTimeMillis();
-
-    // The PML file containing all bot data
-    private PMLFile data;
-
-    // The output stream to log data to
+    private String directory;
+    private PMLElement data;
     private PrintStream stream = System.out;
-
-    // The current connection the bot is using
     private Connection connection;
-
-    // The time the last connection was formed at, used for calculating uptime
     private long connectTime = 0;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public ArcheBot()
-    {
-        this("");
+    public ArcheBot() {
+        this(null);
     }
 
-    public ArcheBot(String directory)
-    {
-        super("");
-        fileManager = new FileManager(directory);
+    public ArcheBot(String directory) {
+        this.directory = directory;
         this.reload();
 
         this.log("ArcheBot (Version %s) loaded and ready for use!", VERSION);
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
     @SuppressWarnings("unchecked")
-    public void connect()
-    {
+    public void connect() {
         if (this.isConnected())
             this.logError("Unable to connect (A connection is already active)");
-        else
-        {
+        else {
             this.reload();
-            try
-            {
+            try {
                 connection = new Connection(this);
                 connectTime = System.currentTimeMillis();
 
                 if (!this.getProperty(Property.nickservPass).isEmpty())
-                {
                     if (this.getProperty(Property.nickservID).isEmpty())
                         this.send(new NickservMessage(this.getProperty(Property.nickservPass)));
                     else
                         this.send(new NickservMessage(this.getProperty(Property.nickservID), this.getProperty(Property.nickservPass)));
-                }
 
                 if (!this.getProperty(Property.channels).isEmpty())
                     for (String channel : StringUtils.breakList(this.getProperty(Property.channels)))
                         this.send(new JoinMessage(channel));
 
-                for (Listener listener : listeners)
-                {
-                    if (listener instanceof ConnectionListener)
-                        ((ConnectionListener) listener).onConnect(this);
-                    if (listener instanceof ConnectEvent.Listener)
-                        ((ConnectEvent.Listener) listener).onConnect(new ConnectEvent(this));
+                for (Handler handler : handlers) {
+                    if (handler instanceof ConnectionHandler)
+                        ((ConnectionHandler) handler).onConnect(this);
+                    if (handler instanceof ConnectEvent.Handler)
+                        ((ConnectEvent.Handler) handler).onConnect(new ConnectEvent(this));
                 }
-            }
-
-            catch (Connection.ConnectionException e)
-            {
+            } catch (Connection.ConnectionException e) {
                 this.logError("Connection refused (%s)", e.getMessage());
-            }
-
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 boolean reconnect = this.toBoolean(Property.reconnect);
 
                 this.logError("An internal exception has occurred (%s)", e);
                 this.log("Disconnected (A fatal exception occurred while connecting | Reconnect: %b)", reconnect);
-                if (reconnect)
-                {
-                    try
-                    {
+                if (reconnect) {
+                    try {
                         Thread.sleep(this.toInteger(Property.reconnectDelay));
-                    }
-
-                    catch (InterruptedException ie)
-                    {
+                    } catch (InterruptedException ie) {
                         this.logError("An internal exception has occurred (%s)", ie);
                     }
                     this.connect();
@@ -153,23 +85,19 @@ public class ArcheBot extends User {
         }
     }
 
-    public void disconnect()
-    {
+    public void disconnect() {
         this.disconnect("Shutting down");
     }
 
-    public void disconnect(String message)
-    {
+    public void disconnect(String message) {
         this.disconnect(message, false);
     }
 
     @SuppressWarnings("unchecked")
-    public void disconnect(String message, boolean reconnect)
-    {
+    public void disconnect(String message, boolean reconnect) {
         if (!this.isConnected())
-            this.logError("Unable to disconnect (No connection currently exists)");
-        else
-        {
+            this.logError("Unable to disconnect (No active connection exists)");
+        else {
             if (connection.isActive())
                 connection.send("QUIT :" + message, true);
             connectTime = 0;
@@ -179,488 +107,283 @@ public class ArcheBot extends User {
 
             data.getChild("permissions").removeChildren();
             for (User user : this.getUsers())
-                for (User.Permission permission : user.getPermissions())
-                    if (!permission.equals(User.Permission.DEFAULT))
-                        data.getChild("permissions/" + user.getNick() + "/" + permission);
-            data.save();
+                for (Permission permission : user.getPermissions())
+                    if (!permission.equals(Permission.DEFAULT))
+                        data.getChild("permissions/" + user + "/" + permission);
+            saveProperties();
 
             users.clear();
             channels.clear();
 
             this.log("Disconnected (%s | Reconnect: %b)", message, reconnect);
 
-            for (Listener listener : listeners)
-            {
-                if (listener instanceof ConnectionListener)
-                    ((ConnectionListener) listener).onDisconnect(this, message, reconnect);
-                if (listener instanceof DisconnectEvent.Listener)
-                    ((DisconnectEvent.Listener) listener).onDisconnect(new DisconnectEvent(this, message, reconnect));
+            for (Handler handler : handlers) {
+                if (handler instanceof ConnectionHandler)
+                    ((ConnectionHandler) handler).onDisconnect(this, message, reconnect);
+                if (handler instanceof DisconnectEvent.Handler)
+                    ((DisconnectEvent.Handler) handler).onDisconnect(new DisconnectEvent(this, message, reconnect));
             }
             if (reconnect)
                 this.connect();
         }
     }
 
-    public Channel getChannel(String name)
-    {
+    public Channel getChannel(String name) {
         return channels.containsKey(name) ? channels.get(name) : new Channel(name);
     }
 
-    public Set<Channel> getChannels()
-    {
+    public Set<Channel> getChannels() {
         return new HashSet<>(channels.values());
     }
 
-    public Command getCommand(String ID)
-    {
+    public Command getCommand(String ID) {
         return commands.containsKey(ID.toLowerCase()) ? commands.get(ID.toLowerCase()) : null;
     }
 
-    public Set<Command> getCommands()
-    {
+    public Set<Command> getCommands() {
         return new TreeSet<>(commands.values());
     }
 
-    public FileManager getFileManager()
-    {
-        return fileManager;
+    public String getDirectory() {
+        return directory;
     }
 
-    public Set<Listener> getListeners()
-    {
-        return new HashSet<>(listeners);
+    public PMLElement getData(String name) {
+        return data.getChild(name);
     }
 
-    public String getProperty(Property property)
-    {
-        if (data.getChild("properties/" + property).getText().equals("") && !property.allowEmpty)
-            this.setProperty(property, property.defaultValue);
-        return data.getChild("properties/" + property).getText();
+    public Set<Handler> getHandlers() {
+        return new HashSet<>(handlers);
     }
 
-    public Set<String> getRegisteredCommandIDs()
-    {
+    public String getProperty(Property property) {
+        if (data.getChild("properties/" + property).getContent().isEmpty() && !property.allowsEmpty())
+            this.setProperty(property, property.getDefaultValue());
+        return data.getChild("properties/" + property).getContent();
+    }
+
+    public Set<String> getRegisteredCommandIDs() {
         return new TreeSet<>(commands.keySet());
     }
 
-    public long getRuntime()
-    {
+    public long getRuntime() {
         return System.currentTimeMillis() - startTime;
     }
 
-    public String getServerInfo(String info)
-    {
+    public String getServerInfo(String info) {
         return serverInfo.containsKey(info) ? serverInfo.get(info) : null;
     }
 
-    public long getUptime()
-    {
-        return this.isConnected() ? System.currentTimeMillis() - connectTime : 0;
+    public long getUptime() {
+        return this.isConnected() ? System.currentTimeMillis() - connectTime : -1;
     }
 
-    public User getUser(String nick)
-    {
+    public User getUser(String nick) {
         if (!users.containsKey(nick))
             users.put(nick, new User(nick));
         return users.get(nick);
     }
 
-    public Set<User> getUsers()
-    {
+    public Set<User> getUsers() {
         return new HashSet<>(users.values());
     }
 
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return connection != null;
     }
 
-    public boolean isInChannel(Channel channel)
-    {
+    public boolean isInChannel(Channel channel) {
         return this.isInChannel(channel.name);
     }
 
-    public boolean isInChannel(String name)
-    {
+    public boolean isInChannel(String name) {
         return channels.containsKey(name);
     }
 
-    public boolean isRegistered(Command command)
-    {
+    public boolean isRegistered(Command command) {
         return commands.containsValue(command);
     }
 
-    public boolean isRegistered(String ID)
-    {
+    public boolean isRegistered(String ID) {
         return commands.containsKey(ID.toLowerCase());
     }
 
-    public boolean isUser(String nick)
-    {
+    public boolean isUser(String nick) {
         return users.containsKey(nick);
     }
 
-    public void log(String line, Object... objects)
-    {
-        this.log(2, String.format(line, objects));
+    public void log(String line, Object... objects) {
+        this.print("<>", String.format(line, objects));
     }
 
-    public void logError(String error, Object... objects)
-    {
-        this.log(3, String.format(error, objects));
+    public void logError(String error, Object... objects) {
+        this.print("== Error:", String.format(error, objects));
     }
 
-    public void registerCommand(Command command)
-    {
-        commands.put(command.getName().toLowerCase(), command);
-        for (String ID : command.getIDs())
-            commands.put(ID.toLowerCase(), command);
+    public void register(Command... commands) {
+        for (Command command : commands) {
+            this.commands.put(command.getName().toLowerCase(), command);
+            for (String ID : command.getIDs())
+                this.commands.put(ID.toLowerCase(), command);
+        }
     }
 
-    public void registerCommands(Command... commands)
-    {
-        for (Command command : commands)
-            this.registerCommand(command);
+    public void register(Handler handler) {
+        handlers.add(handler);
     }
 
-    public void registerListener(Listener listener)
-    {
-        listeners.add(listener);
-    }
-
-    public void reload()
-    {
-        if (new File(fileManager.getDirectory()).mkdir())
-            this.log("New directory created.");
-        data = new PMLFile("bot", fileManager.getDirectory());
-        PMLObject properties = data.getChild("properties");
+    public void reload() {
+        if (directory != null) {
+            if (new File(directory).mkdir())
+                this.log("New directory created.");
+            data = PMLElement.read((directory.isEmpty() ? "" : directory + File.separator) + "bot", "bot");
+        } else
+            data = new PMLElement("bot");
+        PMLElement properties = data.getChild("properties");
 
         for (Property property : Property.values())
-            if (!properties.isChild("" + property))
-                this.setProperty(property, property.defaultValue);
+            if (!properties.isChild(property.toString()))
+                this.setProperty(property, property.getDefaultValue());
 
         for (User user : this.getUsers())
             user.resetPermissions();
-        for (PMLObject user : data.getChild("permissions").getChildren())
-            for (PMLObject permission : user.getChildren())
-                this.getUser(user.getTitle()).givePermission(User.Permission.generate(permission.getTitle().matches("\\d+") ? permission.getText() : permission.getTitle()));
+        for (PMLElement user : data.getChild("permissions").getChildren())
+            this.updatePermissions(this.getUser(user.getTag()));
 
-        data.save();
+        saveProperties();
     }
 
-    public void removeCommand(Command command)
-    {
-        this.removeCommand(command.getName());
+    public void saveProperties() {
+        if (directory != null)
+            data.write((directory.isEmpty() ? "" : directory + File.separator) + "bot");
+    }
+
+    public void send(String output) {
+        if (this.isConnected())
+            connection.send(output, false);
+        else
+            this.logError("Unable to send output (No active connection exists)");
+    }
+
+    public void send(Output output) {
+        this.send(output.toString());
+    }
+
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
+
+    public void setLogStream(PrintStream stream) {
+        this.stream = stream;
+    }
+
+    public Object setProperty(Property property, Object value) {
+        data.getChild("properties/" + property).setContent(value.toString());
+        return value;
+    }
+
+    public boolean toBoolean(Property property) {
+        return StringUtils.toBoolean(this.getProperty(property));
+    }
+
+    public int toInteger(Property property) {
+        return this.getProperty(property).matches("\\d+") ?
+                Integer.parseInt(this.getProperty(property)) :
+                (int) this.setProperty(property, property.getDefaultValue());
+    }
+
+    public void unregister(Command command) {
+        this.unregister(command.getName());
         for (String ID : command.getIDs())
-            this.removeCommand(ID);
+            if (this.getCommand(ID) == command)
+                this.unregister(ID);
     }
 
-    public void removeCommand(String ID)
-    {
+    public void unregister(String ID) {
         if (commands.containsKey(ID.toLowerCase()))
             commands.remove(ID.toLowerCase());
     }
 
-    public void removeListener(Listener listener)
-    {
-        if (listeners.contains(listener))
-            listeners.remove(listener);
+    public void unregister(Handler handler) {
+        if (handlers.contains(handler))
+            handlers.remove(handler);
     }
-
-    public void saveProperties()
-    {
-        data.save();
-    }
-
-    public void send(Output output)
-    {
-        if (this.isConnected())
-            connection.send("" + output, false);
-        else
-            this.logError("Send method failed (No active connection exists!)");
-    }
-
-    public void setOutputStream(PrintStream stream)
-    {
-        this.stream = stream;
-    }
-
-    public Object setProperty(Property property, Object value)
-    {
-        data.getChild("properties/" + property).setText("" + value);
-        return value;
-    }
-
-    /*
-     * =======================================
-     * Overridden methods:
-     * =======================================
-     */
 
     @Override
-    public String toString()
-    {
-        return String.format("%s {LOGIN:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b} {UPTIME:%d}",
-                nick,
-                login,
-                realname,
-                server,
-                VERSION,
-                this.isConnected(),
-                this.getUptime());
+    public String details() {
+        return String.format("%s {LOGIN:%s} {HOSTMASK:%s} {REALNAME:%s} {SERVER:%s} {VERSION:%s} {CONNECTED:%b} {UPTIME:%d}",
+                nick, login, hostmask, realname, server, VERSION, this.isConnected(), this.getUptime());
     }
 
-    /*
-     * =======================================
-     * Local methods:
-     * =======================================
-     */
-
-    void addChannel(Channel channel)
-    {
+    void addChannel(Channel channel) {
         channels.put(channel.name, channel);
     }
 
-    void addUser(User user)
-    {
-        users.put(user.getNick(), user);
+    void addUser(User user) {
+        users.put(user.nick, user);
     }
 
-    synchronized void log(int type, String line)
-    {
-        if (this.toBoolean(Property.verbose) || data == null)
-            stream.println(dateFormat.format(new Date()) + (type == 0 ? "<-" : type == 1 ? "->" : type == 2 ? "<>" : "== Error:") + " " + line);
+    synchronized void print(String prefix, String line) {
+        if (data == null || this.toBoolean(Property.verbose))
+            stream.println(dateFormat.format(new Date()) + prefix + " " + line);
     }
 
-    void removeChannel(String name)
-    {
+    void removeChannel(String name) {
         if (channels.containsKey(name))
             channels.remove(name);
     }
 
-    void removeUser(String nick)
-    {
+    void removeUser(String nick) {
         if (users.containsKey(nick))
             users.remove(nick);
     }
 
-    void setServerInfo(String info, String value)
-    {
+    void setServerInfo(String info, String value) {
         serverInfo.put(info, value);
     }
 
-    boolean toBoolean(Property property)
-    {
-        return StringUtils.toBoolean(this.getProperty(property));
+    void updatePermissions(User user) {
+        user.resetPermissions();
+        if (data.getChild("permissions").isChild(user.nick))
+            for (PMLElement permission : data.getChild("permissions/" + user.nick).getChildren())
+                user.givePermission(Permission.get(permission.getTag().matches("^\\d+$") ? permission.getContent() : permission.getTag()));
     }
 
-    int toInteger(Property property)
-    {
-        return this.getProperty(property).matches("\\d+") ?
-                Integer.parseInt(this.getProperty(property)) :
-                (int) this.setProperty(property, property.defaultValue);
-    }
+    public interface Handler<B extends ArcheBot> {}
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
+    public static class Event<B extends ArcheBot> {
 
-    public static enum Property
-    {
-        /*
-         * =======================================
-         * Enum values:
-         * =======================================
-         */
-
-        nick                ("nick",                false, "ArcheBot"),
-        login               ("login",               false, "ArcheBot"),
-        realname            ("realname",            false, "ArcheBot (Version {VERSION}) by p_slice"),
-        server              ("server",              false, "irc.esper.net"),
-        serverPass          ("serverPass",          true,  ""),
-        port                ("port",                false, 6667),
-        messageDelay        ("messageDelay",        false, 1000),
-        nickservID          ("nickservID",          true,  ""),
-        nickservPass        ("nickservPass",        true,  ""),
-        prefix              ("prefix",              false, "+"),
-        allowSeparatePrefix ("allowSeparatePrefix", false, false),
-        enableCommands      ("enableCommands",      false, true),
-        channels            ("channels",            true,  "#PotatoBot"),
-        printErrorTrace     ("printErrorTrace",     false, true),
-        rename              ("rename",              false, false),
-        reconnect           ("reconnect",           false, false),
-        reconnectDelay      ("reconnectDelay",      false, 60000),
-        timeoutDelay        ("timeoutDelay",        false, 240000),
-        verbose             ("verbose",             false, true),
-        logPings            ("verbose/logPings",    false, true),
-        logMessages         ("verbose/logMessages", false, true),
-        logNotices          ("verbose/logNotices",  false, true),
-        logNicks            ("verbose/logNicks",    false, true),
-        logTopics           ("verbose/logTopics",   false, true),
-        logJoins            ("verbose/logJoins",    false, true),
-        logParts            ("verbose/logParts",    false, true),
-        logQuits            ("verbose/logQuits",    false, true),
-        logKicks            ("verbose/logKicks",    false, true),
-        logModes            ("verbose/logModes",    false, true),
-        logInvites          ("verbose/logInvites",  false, true),
-        logGeneric          ("verbose/logGeneric",  false, true),
-        logOutput           ("verbose/logOutput",   false, true);
-
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
-
-        // The name of the property
-        private final String name;
-        // Whether or not the property allows empty values
-        private final boolean allowEmpty;
-        // The default value of the property
-        private final Object defaultValue;
-
-        /*
-         * =======================================
-         * Constructors:
-         * =======================================
-         */
-
-        private Property(String name, boolean allowEmpty, Object defaultValue)
-        {
-            this.name = name;
-            this.allowEmpty = allowEmpty;
-            this.defaultValue = defaultValue;
-        }
-
-        /*
-         * =======================================
-         * public methods:
-         * =======================================
-         */
-
-        public Object getDefaultValue()
-        {
-            return defaultValue;
-        }
-
-        /*
-         * =======================================
-         * Overridden methods:
-         * =======================================
-         */
-
-        @Override
-        public String toString()
-        {
-            return name;
-        }
-
-        /*
-         * =======================================
-         * Static methods:
-         * =======================================
-         */
-
-        public static boolean isProperty(String name)
-        {
-            for (Property property : Property.values())
-                if (property.name.toLowerCase().replace("verbose/", "").equals(name.toLowerCase()))
-                    return true;
-            return false;
-        }
-
-        public static Property getProperty(String name)
-        {
-            for (Property property : Property.values())
-                if (property.name.toLowerCase().replace("verbose/", "").equals(name.toLowerCase()))
-                    return property;
-            return null;
-        }
-    }
-
-    public static interface Listener<B extends ArcheBot> {}
-
-    public static class Event<B extends ArcheBot>
-    {
-
-       /*
-        * =======================================
-        * Objects and variables:
-        * =======================================
-        */
-
-        // The bot associated with the event
         private final B bot;
-        // The time the event occurred at
         private final long timeStamp = System.currentTimeMillis();
 
-       /*
-        * =======================================
-        * Constructors:
-        * =======================================
-        */
-
-        protected Event(B bot)
-        {
+        protected Event(B bot) {
             this.bot = bot;
         }
 
-       /*
-        * =======================================
-        * Public methods:
-        * =======================================
-        */
-
-        public B getBot()
-        {
+        public B getBot() {
             return bot;
         }
 
-        public long getTimeStamp()
-        {
+        public long getTimeStamp() {
             return timeStamp;
         }
     }
 
-    public static class Output
-    {
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
+    public static class Output {
 
-        // The message to be sent to the server
         private final String line;
 
-        /*
-         * =======================================
-         * Constructors:
-         * =======================================
-         */
-
-        protected Output(String line)
-        {
+        protected Output(String line) {
             this.line = line;
         }
 
-        /*
-         * =======================================
-         * Overridden methods:
-         * =======================================
-         */
-
         @Override
-        public final String toString()
-        {
+        public final String toString() {
             return line;
         }
 
         @Override
-        public final boolean equals(Object obj)
-        {
+        public final boolean equals(Object obj) {
             return obj instanceof Output && obj.toString().equals(line);
         }
     }

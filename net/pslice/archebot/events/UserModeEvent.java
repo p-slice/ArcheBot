@@ -5,24 +5,11 @@ import net.pslice.archebot.User;
 
 public class UserModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final User user;
     private final User.Mode mode;
     private final boolean added;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public UserModeEvent(B bot, User user, User.Mode mode, boolean added)
-    {
+    public UserModeEvent(B bot, User user, User.Mode mode, boolean added) {
         super(bot);
 
         this.user = user;
@@ -30,35 +17,19 @@ public class UserModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.added = added;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    public User.Mode getMode()
-    {
+    public User.Mode getMode() {
         return mode;
     }
 
-    public boolean modeAdded()
-    {
+    public boolean modeAdded() {
         return added;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onUserModeSet(UserModeEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onUserModeSet(UserModeEvent<B> event);
     }
 }

@@ -4,19 +4,11 @@ import net.pslice.archebot.ArcheBot;
 
 public final class NickservMessage extends ArcheBot.Output {
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public NickservMessage(String nick, String password)
-    {
+    public NickservMessage(String nick, String password) {
         this(nick + " " + password);
     }
 
-    public NickservMessage(String password)
-    {
+    public NickservMessage(String password) {
         super("NICKSERV IDENTIFY " + password);
     }
 }

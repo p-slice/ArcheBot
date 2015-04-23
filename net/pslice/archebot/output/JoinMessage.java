@@ -5,29 +5,19 @@ import net.pslice.archebot.Channel;
 
 public final class JoinMessage extends ArcheBot.Output {
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public JoinMessage(Channel channel)
-    {
+    public JoinMessage(Channel channel) {
         this(channel.name);
     }
 
-    public JoinMessage(Channel channel, String key)
-    {
+    public JoinMessage(Channel channel, String key) {
         this(channel.name, key);
     }
 
-    public JoinMessage(String channel)
-    {
+    public JoinMessage(String channel) {
         super("JOIN " + channel);
     }
 
-    public JoinMessage(String channel, String key)
-    {
+    public JoinMessage(String channel, String key) {
         super("JOIN " + channel + " " + key);
     }
 }

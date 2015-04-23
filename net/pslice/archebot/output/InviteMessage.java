@@ -6,19 +6,11 @@ import net.pslice.archebot.User;
 
 public final class InviteMessage extends ArcheBot.Output {
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public InviteMessage(Channel channel, User user)
-    {
+    public InviteMessage(Channel channel, User user) {
         this(channel.name, user.getNick());
     }
 
-    public InviteMessage(String channel, String user)
-    {
+    public InviteMessage(String channel, String user) {
         super("INVITE " + user + " " + channel);
     }
 }

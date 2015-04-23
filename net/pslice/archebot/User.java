@@ -1,303 +1,121 @@
 package net.pslice.archebot;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
 public class User implements Comparable<User> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
-    // Information about the user
-    protected String nick     = "",
-                     login    = "",
-                     hostmask = "",
-                     realname = "",
-                     server   = "";
-
-    // Set of user's permissions
+    protected String nick, login = "", hostmask = "", realname = "", server = "";
     protected final Set<Permission> permissions = new HashSet<>();
-
-    // Set of user's modes
     protected final Set<Mode> modes = new HashSet<>();
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
+    protected User() {
+        this("");
+    }
 
-    User(String nick)
-    {
+    protected User(String nick) {
         this.nick = nick;
         permissions.add(Permission.DEFAULT);
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
+    public String details() {
+        return nick + (login.isEmpty() ? "" : "!" + login) + (hostmask.isEmpty() ? "" : "@" + hostmask);
+    }
 
-    public String getHostmask()
-    {
+    public String getHostmask() {
         return hostmask;
     }
 
-    public String getLogin()
-    {
+    public String getLogin() {
         return login;
     }
 
-    public Set<Mode> getModes()
-    {
+    public Set<Mode> getModes() {
         return new HashSet<>(modes);
     }
 
-    public String getNick()
-    {
+    public String getNick() {
         return nick;
     }
 
-    public Set<Permission> getPermissions()
-    {
+    public Set<Permission> getPermissions() {
         return new HashSet<>(permissions);
     }
 
-    public String getRealname()
-    {
+    public String getRealname() {
         return realname;
     }
 
-    public String getServer()
-    {
+    public String getServer() {
         return server;
     }
 
-    public void givePermission(Permission permission)
-    {
+    public void givePermission(Permission permission) {
         permissions.add(permission);
     }
 
-    public boolean hasPermission(Permission permission)
-    {
+    public boolean hasPermission(Permission permission) {
+        for (Permission p : permissions)
+            if (p.includes(permission))
+                return true;
         return permissions.contains(permission);
     }
 
-    public boolean hasMode(Mode mode)
-    {
+    public boolean hasMode(Mode mode) {
         return modes.contains(mode);
     }
 
-    public void removePermission(Permission permission)
-    {
+    public void removePermission(Permission permission) {
         permissions.remove(permission);
     }
 
-    public void resetPermissions()
-    {
+    public void resetPermissions() {
         permissions.clear();
         permissions.add(Permission.DEFAULT);
     }
 
-    public StaticUser toStaticUser()
-    {
-        return new StaticUser(this);
-    }
-
-    /*
-     * =======================================
-     * Overridden methods:
-     * =======================================
-     */
-
     @Override
-    public String toString()
-    {
-        return nick + (login.equals("") ? "" : "!" + login) + (hostmask.equals("") ? "" : "@" + hostmask);
+    public String toString() {
+        return nick;
     }
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public int compareTo(User user)
-    {
-        return nick.toLowerCase().compareTo(user.nick.toLowerCase());
+    public int compareTo(User user) {
+        return nick.compareToIgnoreCase(user.nick);
     }
 
-    /*
-     * =======================================
-     * Local methods:
-     * =======================================
-     */
-
-    void addMode(Mode mode)
-    {
+    void addMode(Mode mode) {
         modes.add(mode);
     }
 
-    void removeMode(Mode mode)
-    {
+    void removeMode(Mode mode) {
         modes.remove(mode);
     }
 
-    void setHostmask(String hostmask)
-    {
-        this.hostmask = hostmask;
-    }
+    public static class Mode {
 
-    void setLogin(String login)
-    {
-        this.login = login;
-    }
-
-    void setNick(String nick)
-    {
-        this.nick = nick;
-    }
-
-    void setRealname(String realname)
-    {
-        this.realname = realname;
-    }
-
-    void setServer(String server)
-    {
-        this.server = server;
-    }
-
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static class Permission
-    {
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
-
-        // All permissions
-        private static final HashMap<String, Permission> permissions = new HashMap<>();
-
-        // Pre-defined permissions
-        public static final Permission DEFAULT  = new Permission("permission.default"),
-                                       OPERATOR = new Permission("permission.operator");
-
-        // The ID of the permission
-        private final String ID;
-
-        /*
-         * =======================================
-         * Constructors:
-         * =======================================
-         */
-
-        private Permission(String ID)
-        {
-            this.ID = ID;
-            permissions.put(ID, this);
-        }
-
-        /*
-         * =======================================
-         * Overridden methods:
-         * =======================================
-         */
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            return obj instanceof Permission && obj.toString().equals(this.toString());
-        }
-
-        @Override
-        public String toString()
-        {
-            return ID;
-        }
-
-        /*
-         * =======================================
-         * Static methods:
-         * =======================================
-         */
-
-        public static boolean isPermission(String ID)
-        {
-            return permissions.containsKey(ID);
-        }
-
-        public static Permission generate(String ID)
-        {
-            return permissions.containsKey(ID) ? permissions.get(ID) : new Permission(ID);
-        }
-
-        public static Set<Permission> getAllPermissions()
-        {
-            return new HashSet<>(permissions.values());
-        }
-    }
-
-    public static class Mode
-    {
-        /*
-         * =======================================
-         * Objects and variables:
-         * =======================================
-         */
-
-        // All user modes
         private static final HashSet<Mode> modes = new HashSet<>();
-        // The ID of the mode
         private final char ID;
 
-        /*
-         * =======================================
-         * Constructors:
-         * =======================================
-         */
-
-        Mode(char ID)
-        {
+        Mode(char ID) {
             this.ID = ID;
             modes.add(this);
         }
 
-        /*
-         * =======================================
-         * Overridden methods:
-         * =======================================
-         */
-
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "" + ID;
         }
 
-        /*
-         * =======================================
-         * Static methods:
-         * =======================================
-         */
-
-        public static Mode getMode(char ID)
-        {
+        public static Mode getMode(char ID) {
             for (Mode mode : modes)
                 if (mode.ID == ID)
                     return mode;
             return null;
         }
 
-        public static boolean isMode(char ID)
-        {
+        public static boolean isMode(char ID) {
             for (Mode mode : modes)
                 if (mode.ID == ID)
                     return true;

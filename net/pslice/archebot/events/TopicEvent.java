@@ -6,24 +6,11 @@ import net.pslice.archebot.User;
 
 public class TopicEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
     private final User user;
     private final String topic;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public TopicEvent(B bot, Channel channel, User user, String topic)
-    {
+    public TopicEvent(B bot, Channel channel, User user, String topic) {
         super(bot);
 
         this.channel = channel;
@@ -31,35 +18,19 @@ public class TopicEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.topic = topic;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 
-    public String getTopic()
-    {
+    public String getTopic() {
         return topic;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onTopicChange(TopicEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onTopicChange(TopicEvent<B> event);
     }
 }

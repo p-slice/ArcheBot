@@ -6,39 +6,27 @@ import net.pslice.archebot.User;
 
 public final class CTCPCommand extends ArcheBot.Output {
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public CTCPCommand(Channel channel, String command)
-    {
+    public CTCPCommand(Channel channel, String command) {
         this(channel.name, command);
     }
 
-    public CTCPCommand(User user, String command)
-    {
+    public CTCPCommand(User user, String command) {
         this(user.getNick(), command);
     }
 
-    public CTCPCommand(String target, String command)
-    {
+    public CTCPCommand(String target, String command) {
         this(target, command, "");
     }
 
-    public CTCPCommand(Channel channel, String command, String message, Object... objects)
-    {
+    public CTCPCommand(Channel channel, String command, String message, Object... objects) {
         this(channel.name, command, message, objects);
     }
 
-    public CTCPCommand(User user, String command, String message, Object... objects)
-    {
+    public CTCPCommand(User user, String command, String message, Object... objects) {
         this(user.getNick(), command, message, objects);
     }
 
-    public CTCPCommand(String target, String command, String message, Object... objects)
-    {
-        super("PRIVMSG " + target + " :\u0001" + command.toUpperCase() + (message.equals("") ? "" : " " + String.format(message, objects)) + "\u0001");
+    public CTCPCommand(String target, String command, String message, Object... objects) {
+        super("PRIVMSG " + target + " :\u0001" + command.toUpperCase() + (message.isEmpty() ? "" : " " + String.format(message, objects)) + "\u0001");
     }
 }

@@ -6,25 +6,11 @@ import net.pslice.archebot.User;
 
 public class KickEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
-    private final User kicker,
-                       receiver;
+    private final User kicker, receiver;
     private final String message;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public KickEvent(B bot, Channel channel, User kicker, User receiver, String message)
-    {
+    public KickEvent(B bot, Channel channel, User kicker, User receiver, String message) {
         super(bot);
 
         this.channel = channel;
@@ -33,40 +19,23 @@ public class KickEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.message = message;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getKicker()
-    {
+    public User getKicker() {
         return kicker;
     }
 
-    public User getReceiver()
-    {
+    public User getReceiver() {
         return receiver;
     }
 
-    public String getMessage()
-    {
+    public String getMessage() {
         return message;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onKick(KickEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onKick(KickEvent<B> event);
     }
 }

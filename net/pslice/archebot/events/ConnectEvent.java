@@ -4,25 +4,11 @@ import net.pslice.archebot.ArcheBot;
 
 public class ConnectEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public ConnectEvent(B bot)
-    {
+    public ConnectEvent(B bot) {
         super(bot);
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onConnect(ConnectEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onConnect(ConnectEvent<B> event);
     }
 }

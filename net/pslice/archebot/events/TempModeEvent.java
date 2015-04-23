@@ -4,26 +4,12 @@ import net.pslice.archebot.*;
 
 public class TempModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    /*
-     * =======================================
-     * Objects and variables:
-     * =======================================
-     */
-
     private final Channel channel;
-    private final User setter,
-                       receiver;
+    private final User setter, receiver;
     private final Mode.TempMode mode;
     private final boolean added;
 
-    /*
-     * =======================================
-     * Constructors:
-     * =======================================
-     */
-
-    public TempModeEvent(B bot, Channel channel, User setter, User receiver, Mode.TempMode mode, boolean added)
-    {
+    public TempModeEvent(B bot, Channel channel, User setter, User receiver, Mode.TempMode mode, boolean added) {
         super(bot);
 
         this.channel = channel;
@@ -33,45 +19,27 @@ public class TempModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         this.added = added;
     }
 
-    /*
-     * =======================================
-     * Public methods:
-     * =======================================
-     */
-
-    public Channel getChannel()
-    {
+    public Channel getChannel() {
         return channel;
     }
 
-    public User getSetter()
-    {
+    public User getSetter() {
         return setter;
     }
 
-    public User getReceiver()
-    {
+    public User getReceiver() {
         return receiver;
     }
 
-    public Mode.TempMode getMode()
-    {
+    public Mode.TempMode getMode() {
         return mode;
     }
 
-    public boolean modeAdded()
-    {
+    public boolean modeAdded() {
         return added;
     }
 
-    /*
-     * =======================================
-     * Internal classes:
-     * =======================================
-     */
-
-    public static interface Listener<B extends ArcheBot> extends ArcheBot.Listener<B>
-    {
-        public void onTempModeSet(TempModeEvent<B> event);
+    public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
+        void onTempModeSet(TempModeEvent<B> event);
     }
 }
