@@ -4,11 +4,11 @@ import net.pslice.archebot.*;
 
 public final class AddModeMessage extends ArcheBot.Output {
 
-    public AddModeMessage(Channel channel, Mode.ValueMode mode) {
+    public AddModeMessage(Channel channel, Mode mode) {
         this(channel.name, mode);
     }
 
-    public AddModeMessage(String channel, Mode.ValueMode mode) {
+    public AddModeMessage(String channel, Mode mode) {
         this(channel, mode, "");
     }
 
@@ -20,19 +20,11 @@ public final class AddModeMessage extends ArcheBot.Output {
         super("MODE " + channel + " +" + mode + (value.isEmpty() ? "" : " " + value));
     }
 
-    public AddModeMessage(Channel channel, User user, Mode.TempMode mode) {
+    public AddModeMessage(Channel channel, User user, Mode mode) {
         this(channel.name, user.getNick(), mode);
     }
 
-    public AddModeMessage(String channel, String user, Mode.TempMode mode) {
+    public AddModeMessage(String channel, String user, Mode mode) {
         super("MODE " + channel + " +" + mode + " " + user);
-    }
-
-    public AddModeMessage(User user, User.Mode mode) {
-        this(user.getNick(), mode);
-    }
-
-    public AddModeMessage(String user, User.Mode mode) {
-        super("MODE " + user + " +" + mode);
     }
 }

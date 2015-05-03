@@ -41,6 +41,6 @@ public class ModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
     }
 
     public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
-        void onModeSet(ModeEvent<B> event);
+        void onMode(ModeEvent<B> event);
     }
 }

@@ -3,9 +3,8 @@ package net.pslice.archebot;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
 
-public class Permission {
+public class Permission implements Comparable<Permission> {
 
     private static final HashMap<String, Permission> permissions = new HashMap<>();
     public static final Permission DEFAULT = new Permission("default"),
@@ -21,6 +20,10 @@ public class Permission {
         permissions.put(ID, this);
     }
 
+    public HashSet<Permission> getInclusions() {
+        return new HashSet<>(inclusions);
+    }
+
     public void include(Permission... permissions) {
         inclusions.addAll(Arrays.asList(permissions));
     }
@@ -34,9 +37,15 @@ public class Permission {
         return inclusions.contains(permission);
     }
 
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public int compareTo(Permission permission) {
+        return ID.compareToIgnoreCase(permission.ID);
+    }
+
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Permission && obj.toString().equals(this.toString());
+        return obj instanceof Permission && obj.toString().equals(toString());
     }
 
     @Override
@@ -56,7 +65,7 @@ public class Permission {
         return permissions.containsKey(ID) ? permissions.get(ID) : new Permission(ID);
     }
 
-    public static Set<Permission> getAll() {
+    public static HashSet<Permission> getAll() {
         return new HashSet<>(permissions.values());
     }
 }

@@ -1,20 +1,46 @@
 package net.pslice.archebot;
 
-import java.util.HashMap;
-import java.util.HashSet;
+public class Mode implements Comparable<Mode> {
 
-public class Mode {
+    private final char ID, prefix;
+    private final Type type;
 
-    private static final HashMap<Character, Mode> modes = new HashMap<>();
-    private final char ID;
+    Mode(char ID, Type type) {
+        this(ID, type, ID);
+    }
 
-    private Mode(char ID) {
+    Mode(char ID, Type type, char prefix) {
         this.ID = ID;
-        modes.put(ID, this);
+        this.type = type;
+        this.prefix = prefix;
     }
 
     public char getID() {
         return ID;
+    }
+
+    public char getPrefix() {
+        return prefix;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public boolean isList() {
+        return type == Type.LIST;
+    }
+
+    public boolean isStatus() {
+        return type == Type.STATUS;
+    }
+
+    public boolean isUser() {
+        return type == Type.USER;
+    }
+
+    public boolean isValue() {
+        return type == Type.VALUE;
     }
 
     @Override
@@ -22,45 +48,18 @@ public class Mode {
         return "" + ID;
     }
 
-    public static Mode getMode(char ID) {
-        return modes.containsKey(ID) ? modes.get(ID) : null;
+    @Override
+    public boolean equals(Object o) {
+        return (o instanceof Mode) && (type == ((Mode) o).type && ID == ((Mode) o).ID);
     }
 
-    public static HashSet<Mode> getModes() {
-        return new HashSet<>(modes.values());
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public int compareTo(Mode mode) {
+        return this.toString().compareTo(mode.toString());
     }
 
-    public static HashSet<Character> getModeIDs() {
-        return new HashSet<>(modes.keySet());
-    }
-
-    public static boolean isMode(char ID) {
-        return modes.containsKey(ID);
-    }
-
-    public static class TempMode extends Mode {
-
-        private final char prefix;
-
-        TempMode(char ID, char prefix) {
-            super(ID);
-            this.prefix = prefix;
-        }
-
-        public char getPrefix() {
-            return prefix;
-        }
-    }
-
-    public static class ValueMode extends Mode {
-        ValueMode(char ID) {
-            super(ID);
-        }
-    }
-
-    public static class PermaMode extends Mode {
-        PermaMode(char ID) {
-            super(ID);
-        }
+    public enum Type {
+        STATUS, VALUE, LIST, USER
     }
 }

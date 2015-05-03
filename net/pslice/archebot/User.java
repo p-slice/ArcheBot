@@ -1,13 +1,12 @@
 package net.pslice.archebot;
 
 import java.util.HashSet;
-import java.util.Set;
 
 public class User implements Comparable<User> {
 
     protected String nick, login = "", hostmask = "", realname = "", server = "";
-    protected final Set<Permission> permissions = new HashSet<>();
-    protected final Set<Mode> modes = new HashSet<>();
+    protected final HashSet<Permission> permissions = new HashSet<>();
+    protected final HashSet<Mode> modes = new HashSet<>();
 
     protected User() {
         this("");
@@ -30,7 +29,7 @@ public class User implements Comparable<User> {
         return login;
     }
 
-    public Set<Mode> getModes() {
+    public HashSet<Mode> getModes() {
         return new HashSet<>(modes);
     }
 
@@ -38,7 +37,7 @@ public class User implements Comparable<User> {
         return nick;
     }
 
-    public Set<Permission> getPermissions() {
+    public HashSet<Permission> getPermissions() {
         return new HashSet<>(permissions);
     }
 
@@ -91,35 +90,5 @@ public class User implements Comparable<User> {
 
     void removeMode(Mode mode) {
         modes.remove(mode);
-    }
-
-    public static class Mode {
-
-        private static final HashSet<Mode> modes = new HashSet<>();
-        private final char ID;
-
-        Mode(char ID) {
-            this.ID = ID;
-            modes.add(this);
-        }
-
-        @Override
-        public String toString() {
-            return "" + ID;
-        }
-
-        public static Mode getMode(char ID) {
-            for (Mode mode : modes)
-                if (mode.ID == ID)
-                    return mode;
-            return null;
-        }
-
-        public static boolean isMode(char ID) {
-            for (Mode mode : modes)
-                if (mode.ID == ID)
-                    return true;
-            return false;
-        }
     }
 }

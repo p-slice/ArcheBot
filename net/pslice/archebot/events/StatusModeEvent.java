@@ -2,14 +2,14 @@ package net.pslice.archebot.events;
 
 import net.pslice.archebot.*;
 
-public class TempModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
+public class StatusModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     private final Channel channel;
     private final User setter, receiver;
-    private final Mode.TempMode mode;
+    private final Mode mode;
     private final boolean added;
 
-    public TempModeEvent(B bot, Channel channel, User setter, User receiver, Mode.TempMode mode, boolean added) {
+    public StatusModeEvent(B bot, Channel channel, User setter, User receiver, Mode mode, boolean added) {
         super(bot);
 
         this.channel = channel;
@@ -31,7 +31,7 @@ public class TempModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         return receiver;
     }
 
-    public Mode.TempMode getMode() {
+    public Mode getMode() {
         return mode;
     }
 
@@ -40,6 +40,6 @@ public class TempModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
     }
 
     public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
-        void onTempModeSet(TempModeEvent<B> event);
+        void onStatusMode(StatusModeEvent<B> event);
     }
 }
