@@ -90,15 +90,15 @@ public class Channel implements Comparable<Channel> {
         return size;
     }
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(Channel channel) {
         return name.compareToIgnoreCase(channel.name);
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 
     void addMode(User user, Mode mode) {

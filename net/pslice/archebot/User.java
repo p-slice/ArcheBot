@@ -1,12 +1,15 @@
 package net.pslice.archebot;
 
+import net.pslice.utilities.StringUtils;
+
 import java.util.HashSet;
 
 public class User implements Comparable<User> {
 
-    protected String nick, login = "", hostmask = "", realname = "", server = "";
     protected final HashSet<Permission> permissions = new HashSet<>();
     protected final HashSet<Mode> modes = new HashSet<>();
+    protected String nick, login = "", hostmask = "", realname = "";
+    protected Server server;
 
     protected User() {
         this("");
@@ -18,6 +21,11 @@ public class User implements Comparable<User> {
     }
 
     public String details() {
+        return String.format("%s {LOGIN:%s} {HOSTMASK:%s} {REALNAME:%s} {SERVER:%s} {PERMISSIONS:%s} {MODES:%s}",
+                nick, login, hostmask, realname, server, StringUtils.compact(permissions, ", "), StringUtils.compact(modes, ""));
+    }
+
+    public String getIdentity() {
         return nick + (login.isEmpty() ? "" : "!" + login) + (hostmask.isEmpty() ? "" : "@" + hostmask);
     }
 
@@ -45,7 +53,7 @@ public class User implements Comparable<User> {
         return realname;
     }
 
-    public String getServer() {
+    public Server getServer() {
         return server;
     }
 
@@ -73,15 +81,15 @@ public class User implements Comparable<User> {
         permissions.add(Permission.DEFAULT);
     }
 
-    @Override
-    public String toString() {
-        return nick;
-    }
-
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(User user) {
         return nick.compareToIgnoreCase(user.nick);
+    }
+
+    @Override
+    public String toString() {
+        return nick;
     }
 
     void addMode(Mode mode) {

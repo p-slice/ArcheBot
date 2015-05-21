@@ -63,14 +63,14 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
         this.permission = permission;
     }
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(Command<B> command) {
         return name.compareToIgnoreCase(command.name);
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

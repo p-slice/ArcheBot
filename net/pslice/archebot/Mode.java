@@ -43,9 +43,10 @@ public class Mode implements Comparable<Mode> {
         return type == Type.VALUE;
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override
-    public String toString() {
-        return "" + ID;
+    public int compareTo(Mode mode) {
+        return this.toString().compareTo(mode.toString());
     }
 
     @Override
@@ -53,10 +54,9 @@ public class Mode implements Comparable<Mode> {
         return (o instanceof Mode) && (type == ((Mode) o).type && ID == ((Mode) o).ID);
     }
 
-    @SuppressWarnings("NullableProblems")
     @Override
-    public int compareTo(Mode mode) {
-        return this.toString().compareTo(mode.toString());
+    public String toString() {
+        return "" + ID;
     }
 
     public enum Type {

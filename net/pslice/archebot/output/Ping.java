@@ -9,6 +9,6 @@ public final class Ping extends ArcheBot.Output {
     }
 
     public Ping(String message) {
-        super("PING " + message);
+        super("PING :" + message);
     }
 }
