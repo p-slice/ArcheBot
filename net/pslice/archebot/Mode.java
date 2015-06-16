@@ -46,7 +46,7 @@ public class Mode implements Comparable<Mode> {
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(Mode mode) {
-        return this.toString().compareTo(mode.toString());
+        return toString().compareTo(mode.toString());
     }
 
     @Override

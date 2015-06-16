@@ -27,6 +27,6 @@ public final class CTCPCommand extends ArcheBot.Output {
     }
 
     public CTCPCommand(String target, String command, String message, Object... objects) {
-        super("PRIVMSG " + target + " :\u0001" + command.toUpperCase() + (message.isEmpty() ? "" : " " + String.format(message, objects)) + "\u0001");
+        super("PRIVMSG " + target + " :\001" + command.toUpperCase() + (message.isEmpty() ? "" : " " + String.format(message, objects)) + "\001");
     }
 }

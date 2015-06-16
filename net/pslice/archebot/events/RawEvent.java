@@ -5,21 +5,27 @@ import net.pslice.archebot.ArcheBot;
 public class RawEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     private final int ID;
-    private final String line;
+    private final String[] args;
+    private final String tail;
 
-    public RawEvent(B bot, int ID, String line) {
+    public RawEvent(B bot, int ID, String[] args, String tail) {
         super(bot);
 
         this.ID = ID;
-        this.line = line;
+        this.args = args;
+        this.tail = tail;
     }
 
     public int getID() {
         return ID;
     }
 
-    public String getLine() {
-        return line;
+    public String[] getArgs() {
+        return args;
+    }
+
+    public String getTail() {
+        return tail;
     }
 
     public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {

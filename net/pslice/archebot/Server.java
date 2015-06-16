@@ -30,10 +30,6 @@ public class Server implements Comparable<Server> {
         return new ArrayList<>(motd);
     }
 
-    public String getName() {
-        return name;
-    }
-
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(Server server) {

@@ -15,6 +15,6 @@ public final class Action extends ArcheBot.Output {
     }
 
     public Action(String target, String action, Object... objects) {
-        super("PRIVMSG " + target + " :\u0001ACTION " + String.format(action, objects) + "\u0001");
+        super("PRIVMSG " + target + " :\001ACTION " + String.format(action, objects) + "\001");
     }
 }

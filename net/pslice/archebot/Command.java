@@ -4,8 +4,8 @@ import net.pslice.utilities.StringUtils;
 
 public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
 
-    protected final String name;
-    protected final String[] IDs;
+    public final String name;
+    public final String[] IDs;
     protected Permission permission = Permission.DEFAULT;
     protected String parameters = "[No parameters specified]", description = "[No description specified]";
     protected boolean enabled = true;
@@ -25,14 +25,6 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
 
     public String getDescription() {
         return description;
-    }
-
-    public String[] getIDs() {
-        return IDs;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getParameters() {

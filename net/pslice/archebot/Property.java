@@ -3,98 +3,80 @@ package net.pslice.archebot;
 public enum Property {
 
     // Command-related properties
-    allowSeparatePrefix("allowSeparatePrefix", "commands", false, false),
-    autoSavePerms("autoSavePerms", "commands", false, true),
-    enableCommands("enableCommands", "commands", false, true),
-    enableIgnore("enableIgnore", "commands", false, true),
-    enableQuoteSplit("enableQuoteSplit", "commands", false, false),
-    prefix("prefix", "commands", false, "+"),
+    allowSeparatePrefix ("commands", true),
+    autoSavePerms       ("commands", true),
+    enableCommands      ("commands", true),
+    enableIgnore        ("commands", true),
+    enableNickPrefix    ("commands", true),
+    enableQuoteSplit    ("commands", true),
+    prefix              ("commands", "+"),
+    unknownCommandMsg   ("commands", "The command ID '$COMMAND' is not registered."),
 
     // General properties
-    channels("channels", "general", true,  "#PotatoBot"),
-    login("login", "general", false, "ArcheBot"),
-    nick("nick", "general", false, "ArcheBot"),
-    password("password", "general", true, ""),
-    port("port", "general", false, 6667),
-    realname("realname", "general", false, "ArcheBot (Version {VERSION}) by p_slice"),
-    reconnect("reconnect", "general", false, false),
-    reconnectDelay("reconnectDelay", "general", false, 60000),
-    server("server", "general", false, "irc.esper.net"),
-    visible("visible", "general", false, false),
+    channels       ("general", ""),
+    login          ("general", "ArcheBot"),
+    nick           ("general", "ArcheBot"),
+    password       ("general", ""),
+    port           ("general", 6667),
+    realname       ("general", "ArcheBot (Version $VERSION) by p_slice"),
+    reconnect      ("general", false),
+    reconnectDelay ("general", 60000),
+    server         ("general", "irc.esper.net"),
+    visible        ("general", false),
 
     // IO-related properties
-    enableColorShortcut("enableColorShortcut", "io", false, true),
-    enableCPURestraint("enableCPURestraint", "io", false, true), // Requires reconnecting the bot to apply changes
-    messageDelay("messageDelay", "io", false, 1000),
-    timeoutDelay("timeoutDelay", "io", false, 240000), // Requires reconnecting the bot to apply changes
+    enableColorShortcut ("io", true),
+    lineLength          ("io", 510),
+    messageDelay        ("io", 1000),
+    queueSize           ("io", 1000),
+    sleepTime           ("io", 50), // Requires reconnecting the bot to apply changes
+    timeoutDelay        ("io", 240000), // Requires reconnecting the bot to apply changes
 
     // Logging-related properties
-    enableLogging("enableLogging", "logging", false, true),
-    logErrorTrace("logErrorTrace", "logging", false, true),
-    logGeneric("logGeneric", "logging", false, true),
-    logInvites("logInvites", "logging", false, true),
-    logJoins("logJoins", "logging", false, true),
-    logKicks("logKicks", "logging", false, true),
-    logMessages("logMessages", "logging", false, true),
-    logModes("logModes", "logging", false, true),
-    logMOTD("logMOTD", "logging", false, true),
-    logNicks("logNicks", "logging", false, true),
-    logNotices("logNotices", "logging", false, true),
-    logOutput("logOutput", "logging", false, true),
-    logParts("logParts", "logging", false, true),
-    logPings("logPings", "logging", false, true),
-    logQuits("logQuits", "logging", false, true),
-    logTopics("logTopics", "logging", false, true),
+    enableLogging ("logging", true),
+    logErrors     ("logging", true),
+    logErrorTrace ("logging", true),
+    logGeneric    ("logging", true),
+    logInvites    ("logging", true),
+    logJoins      ("logging", true),
+    logKicks      ("logging", true),
+    logMessages   ("logging", true),
+    logModes      ("logging", true),
+    logMOTD       ("logging", true),
+    logNicks      ("logging", true),
+    logNotices    ("logging", true),
+    logOutput     ("logging", true),
+    logParts      ("logging", true),
+    logPings      ("logging", true),
+    logQuits      ("logging", true),
+    logTopics     ("logging", true),
 
     // Nick-related properties
-    checkNick("checkNick", "nick", false, true),
-    nickservID("nickservID", "nick", true, ""),
-    nickservPass("nickservPass", "nick", true, ""),
-    rename("rename", "nick", false, false),
-    updateNick("updateNick", "nick", false, true);
+    checkNick    ("nick", false),
+    nickservID   ("nick", ""),
+    nickservPass ("nick", ""),
+    rename       ("nick", false),
+    updateNick   ("nick", false);
 
-    private final String name, category;
-    private final boolean allowEmpty;
-    private final Object defaultValue;
+    public final String category;
+    public final Object defaultValue;
 
-    Property(String name, String category, boolean allowEmpty, Object defaultValue) {
-        this.name = name;
+    Property(String category, Object defaultValue) {
         this.category = category;
-        this.allowEmpty = allowEmpty;
         this.defaultValue = defaultValue;
     }
 
     public boolean allowsEmpty() {
-        return allowEmpty;
+        return defaultValue.equals("");
     }
 
-    public Object getDefaultValue() {
-        return defaultValue;
+    public String fullName() {
+        return category + "/" + name();
     }
 
-    public String getCategory() {
-        return category;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return category + "/" + name;
-    }
-
-    public static Property get(String name) {
+    public static boolean isValue(String name) {
         for (Property property : Property.values())
-            if (property.name.equalsIgnoreCase(name))
-                return property;
-        return null;
-    }
-
-    public static boolean isProperty(String name) {
-        for (Property property : Property.values())
-            if (property.name.equalsIgnoreCase(name))
+            if (property.name().equalsIgnoreCase(name))
                 return true;
         return false;
     }

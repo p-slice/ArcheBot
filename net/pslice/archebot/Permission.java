@@ -2,7 +2,7 @@ package net.pslice.archebot;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.TreeSet;
 
 public class Permission implements Comparable<Permission> {
 
@@ -10,18 +10,16 @@ public class Permission implements Comparable<Permission> {
     public static final Permission DEFAULT = new Permission("default"),
                                    OPERATOR = new Permission("operator"),
                                    IGNORE = new Permission("ignore");
-    private final HashSet<Permission> inclusions = new HashSet<>();
-    private final String ID;
+    public final String name;
+    private final TreeSet<Permission> inclusions = new TreeSet<>();
 
-    private Permission(String ID) {
-        if (!ID.startsWith("permission."))
-            ID = "permission." + ID;
-        this.ID = ID;
-        permissions.put(ID, this);
+    private Permission(String name) {
+        this.name = name;
+        permissions.put(name, this);
     }
 
-    public HashSet<Permission> getInclusions() {
-        return new HashSet<>(inclusions);
+    public TreeSet<Permission> getInclusions() {
+        return new TreeSet<>(inclusions);
     }
 
     public void include(Permission... permissions) {
@@ -40,7 +38,7 @@ public class Permission implements Comparable<Permission> {
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(Permission permission) {
-        return ID.compareToIgnoreCase(permission.ID);
+        return name.compareToIgnoreCase(permission.name);
     }
 
     @Override
@@ -50,22 +48,22 @@ public class Permission implements Comparable<Permission> {
 
     @Override
     public String toString() {
-        return ID;
+        return name;
     }
 
-    public static boolean exists(String ID) {
-        if (!ID.startsWith("permission."))
-            ID = "permission." + ID;
-        return permissions.containsKey(ID);
+    public static boolean exists(String name) {
+        if (name.startsWith("permission."))
+            name = name.substring(11);
+        return permissions.containsKey(name);
     }
 
-    public static Permission get(String ID) {
-        if (!ID.startsWith("permission."))
-            ID = "permission." + ID;
-        return permissions.containsKey(ID) ? permissions.get(ID) : new Permission(ID);
+    public static Permission get(String name) {
+        if (name.startsWith("permission."))
+            name = name.substring(11);
+        return permissions.containsKey(name) ? permissions.get(name) : new Permission(name);
     }
 
-    public static HashSet<Permission> getAll() {
-        return new HashSet<>(permissions.values());
+    public static TreeSet<Permission> getAll() {
+        return new TreeSet<>(permissions.values());
     }
 }

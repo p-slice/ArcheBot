@@ -2,12 +2,12 @@ package net.pslice.archebot;
 
 import net.pslice.utilities.StringUtils;
 
-import java.util.HashSet;
+import java.util.TreeSet;
 
 public class User implements Comparable<User> {
 
-    protected final HashSet<Permission> permissions = new HashSet<>();
-    protected final HashSet<Mode> modes = new HashSet<>();
+    protected final TreeSet<Permission> permissions = new TreeSet<>();
+    protected final TreeSet<Mode> modes = new TreeSet<>();
     protected String nick, login = "", hostmask = "", realname = "";
     protected Server server;
 
@@ -22,7 +22,7 @@ public class User implements Comparable<User> {
 
     public String details() {
         return String.format("%s {LOGIN:%s} {HOSTMASK:%s} {REALNAME:%s} {SERVER:%s} {PERMISSIONS:%s} {MODES:%s}",
-                nick, login, hostmask, realname, server, StringUtils.compact(permissions, ", "), StringUtils.compact(modes, ""));
+                nick, login, hostmask, realname, server, StringUtils.compact(permissions), StringUtils.compact(modes, ""));
     }
 
     public String getIdentity() {
@@ -37,16 +37,16 @@ public class User implements Comparable<User> {
         return login;
     }
 
-    public HashSet<Mode> getModes() {
-        return new HashSet<>(modes);
+    public TreeSet<Mode> getModes() {
+        return new TreeSet<>(modes);
     }
 
     public String getNick() {
         return nick;
     }
 
-    public HashSet<Permission> getPermissions() {
-        return new HashSet<>(permissions);
+    public TreeSet<Permission> getPermissions() {
+        return new TreeSet<>(permissions);
     }
 
     public String getRealname() {
@@ -57,11 +57,11 @@ public class User implements Comparable<User> {
         return server;
     }
 
-    public void givePermission(Permission permission) {
+    public void give(Permission permission) {
         permissions.add(permission);
     }
 
-    public boolean hasPermission(Permission permission) {
+    public boolean has(Permission permission) {
         for (Permission p : permissions)
             if (p.includes(permission))
                 return true;
@@ -72,7 +72,7 @@ public class User implements Comparable<User> {
         return modes.contains(mode);
     }
 
-    public void removePermission(Permission permission) {
+    public void remove(Permission permission) {
         permissions.remove(permission);
     }
 

@@ -8,10 +8,10 @@ import java.util.HashSet;
 public class Channel implements Comparable<Channel> {
 
     public final String name;
-    protected String topic = "", topicSetter = "";
     protected final HashMap<User, HashSet<Mode>> users = new HashMap<>();
     protected final HashMap<Mode, String> modes = new HashMap<>();
     protected final HashMap<Mode, HashSet<String>> listModes = new HashMap<>();
+    protected String topic = "", topicSetter = "";
 
     protected Channel(String name) {
         this.name = name;
@@ -22,8 +22,8 @@ public class Channel implements Comparable<Channel> {
     }
 
     public String details() {
-        return name + (modes.size() > 0 ? " {MODES:" + StringUtils.compact(modes.keySet(), "") + "}" : "") +
-                " {TOTAL USERS:" + totalUsers() + "} {TOPIC:" + topic + "}";
+        return String.format("%s {MODES:%s} {USERS:%d} {TOPIC:%s}",
+                name, StringUtils.compact(modes.keySet(), ""), users.size(), topic);
     }
 
     public String getValue(Mode mode) {
@@ -44,10 +44,6 @@ public class Channel implements Comparable<Channel> {
 
     public HashSet<Mode> getModes(User user) {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getTopic() {
