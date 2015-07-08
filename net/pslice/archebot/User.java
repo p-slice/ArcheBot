@@ -7,8 +7,8 @@ import java.util.TreeSet;
 public class User implements Comparable<User> {
 
     protected final TreeSet<Permission> permissions = new TreeSet<>();
-    protected final TreeSet<Mode> modes = new TreeSet<>();
-    protected String nick, login = "", hostmask = "", realname = "";
+    protected final TreeSet<Character> modes = new TreeSet<>();
+    protected String nick, login = "", hostmask = "", realname = "", nickservID = null;
     protected Server server;
 
     protected User() {
@@ -37,12 +37,16 @@ public class User implements Comparable<User> {
         return login;
     }
 
-    public TreeSet<Mode> getModes() {
+    public TreeSet<Character> getModes() {
         return new TreeSet<>(modes);
     }
 
     public String getNick() {
         return nick;
+    }
+
+    public String getNickservID() {
+        return nickservID;
     }
 
     public TreeSet<Permission> getPermissions() {
@@ -68,7 +72,7 @@ public class User implements Comparable<User> {
         return permissions.contains(permission);
     }
 
-    public boolean hasMode(Mode mode) {
+    public boolean hasMode(char mode) {
         return modes.contains(mode);
     }
 
@@ -92,11 +96,11 @@ public class User implements Comparable<User> {
         return nick;
     }
 
-    void addMode(Mode mode) {
+    void addMode(char mode) {
         modes.add(mode);
     }
 
-    void removeMode(Mode mode) {
+    void removeMode(char mode) {
         modes.remove(mode);
     }
 }

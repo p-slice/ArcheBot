@@ -2,22 +2,22 @@ package net.pslice.archebot.events;
 
 import net.pslice.archebot.ArcheBot;
 
-public class RawEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
+public class CodeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
-    private final int ID;
+    private final int code;
     private final String[] args;
     private final String tail;
 
-    public RawEvent(B bot, int ID, String[] args, String tail) {
+    public CodeEvent(B bot, int code, String[] args, String tail) {
         super(bot);
 
-        this.ID = ID;
+        this.code = code;
         this.args = args;
         this.tail = tail;
     }
 
-    public int getID() {
-        return ID;
+    public int getCode() {
+        return code;
     }
 
     public String[] getArgs() {
@@ -29,6 +29,6 @@ public class RawEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
     }
 
     public interface Handler<B extends ArcheBot> extends ArcheBot.Handler<B> {
-        void onLine(RawEvent<B> event);
+        void onLine(CodeEvent<B> event);
     }
 }

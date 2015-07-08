@@ -1,16 +1,15 @@
 package net.pslice.archebot.events;
 
 import net.pslice.archebot.ArcheBot;
-import net.pslice.archebot.Mode;
 import net.pslice.archebot.User;
 
 public class UserModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     private final User user;
-    private final Mode mode;
+    private final char mode;
     private final boolean added;
 
-    public UserModeEvent(B bot, User user, Mode mode, boolean added) {
+    public UserModeEvent(B bot, User user, char mode, boolean added) {
         super(bot);
 
         this.user = user;
@@ -22,7 +21,7 @@ public class UserModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         return user;
     }
 
-    public Mode getMode() {
+    public char getMode() {
         return mode;
     }
 

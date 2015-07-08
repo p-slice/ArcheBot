@@ -6,10 +6,10 @@ public class StatusModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     private final Channel channel;
     private final User setter, receiver;
-    private final Mode mode;
+    private final char mode;
     private final boolean added;
 
-    public StatusModeEvent(B bot, Channel channel, User setter, User receiver, Mode mode, boolean added) {
+    public StatusModeEvent(B bot, Channel channel, User setter, User receiver, char mode, boolean added) {
         super(bot);
 
         this.channel = channel;
@@ -31,7 +31,7 @@ public class StatusModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         return receiver;
     }
 
-    public Mode getMode() {
+    public char getMode() {
         return mode;
     }
 

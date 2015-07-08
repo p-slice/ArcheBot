@@ -6,11 +6,11 @@ public class ModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
 
     private final Channel channel;
     private final User user;
-    private final Mode mode;
+    private final char mode;
     private final String value;
     private final boolean added;
 
-    public ModeEvent(B bot, Channel channel, User user, Mode mode, String value, boolean added) {
+    public ModeEvent(B bot, Channel channel, User user, char mode, String value, boolean added) {
         super(bot);
 
         this.channel = channel;
@@ -28,7 +28,7 @@ public class ModeEvent<B extends ArcheBot> extends ArcheBot.Event<B> {
         return user;
     }
 
-    public Mode getMode() {
+    public char getMode() {
         return mode;
     }
 

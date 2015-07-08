@@ -3,7 +3,7 @@ package net.pslice.archebot.output;
 import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Server;
 
-public class MOTDMessage extends ArcheBot.Output {
+public final class MOTDMessage extends ArcheBot.Output {
 
     public MOTDMessage() {
         super("MOTD");

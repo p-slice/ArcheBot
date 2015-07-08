@@ -1,9 +1,8 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.events.ConnectEvent;
 import net.pslice.archebot.events.DisconnectEvent;
 import net.pslice.archebot.handlers.ConnectionHandler;
-import net.pslice.pml.PMLElement;
+import net.pslice.utilities.PMLElement;
 import net.pslice.utilities.StringUtils;
 
 import java.io.File;
@@ -16,8 +15,8 @@ import java.util.TreeSet;
 
 public class ArcheBot extends User {
 
-    public static final String VERSION = "1.15";
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
+    public static final String VERSION = "1.16";
+    protected static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
     public String USER_VERSION = "[No user version specified]";
     final HashSet<Handler> handlers = new HashSet<>();
     State state = State.idle;
@@ -25,8 +24,6 @@ public class ArcheBot extends User {
     private final TreeMap<String, User> users = new TreeMap<>();
     private final TreeMap<String, Command> commands = new TreeMap<>();
     private final TreeMap<String, Server> servers = new TreeMap<>();
-    private final TreeMap<Character, Mode> modes = new TreeMap<>(),
-            userModes = new TreeMap<>();
     private final long startTime = System.currentTimeMillis();
     private String directory;
     private PMLElement data;
@@ -51,7 +48,6 @@ public class ArcheBot extends User {
             logError("Unable to break handler thread (No active connection exists)");
     }
 
-    @SuppressWarnings("unchecked")
     public void connect() {
         if (isConnected())
             logError("Unable to connect (A connection is already active)");
@@ -62,36 +58,15 @@ public class ArcheBot extends User {
                 connection = new Connection(this);
                 connectTime = System.currentTimeMillis();
                 addUser(this);
-
-
-                if (!get(Property.nickservPass).isEmpty())
-                    if (get(Property.nickservID).isEmpty())
-                        send("NICKSERV IDENTIFY " + get(Property.nickservPass));
-                    else
-                        send("NICKSERV IDENTIFY %s %s", get(Property.nickservID), get(Property.nickservPass));
-
-                if (!get(Property.channels).isEmpty())
-                    for (String channel : StringUtils.breakList(get(Property.channels)))
-                        send("JOIN " + channel);
-
-                for (Handler handler : handlers) {
-                    if (handler instanceof ConnectionHandler)
-                        ((ConnectionHandler) handler).onConnect(this);
-                    if (handler instanceof ConnectEvent.Handler)
-                        ((ConnectEvent.Handler) handler).onConnect(new ConnectEvent(this));
-                }
-            } catch (Connection.ConnectionException e) {
-                logError("Connection refused (%s)", e.getMessage());
             } catch (Exception e) {
                 boolean reconnect = toBoolean(Property.reconnect);
-
-                logError("An internal exception has occurred (%s)", e);
+                logError("[ArcheBot:connect] An internal exception has occurred (%s)", e);
                 log("Disconnected (A fatal exception occurred while connecting | Reconnect: %b)", reconnect);
                 if (reconnect) {
                     try {
                         Thread.sleep(toInteger(Property.reconnectDelay));
                     } catch (InterruptedException ie) {
-                        logError("An internal exception has occurred (%s)", ie);
+                        logError("[ArcheBot:connect] An internal exception has occurred (%s)", ie);
                     }
                     connect();
                 }
@@ -107,41 +82,23 @@ public class ArcheBot extends User {
         disconnect(message, false);
     }
 
-    @SuppressWarnings("unchecked")
     public void disconnect(String message, boolean reconnect) {
         if (!isConnected())
             logError("Unable to disconnect (No active connection exists)");
         else {
-            if (state == State.connected)
-                connection.send("QUIT :" + message, false);
-            connection.close();
-            connection = null;
-            connectTime = 0;
-
-            if (toBoolean(Property.autoSavePerms))
-                for (User user : getUsers())
-                    savePermissions(user);
-            saveData();
-
-            log("Disconnected (%s | Reconnect: %b)", message, reconnect);
-
-            for (Handler handler : handlers) {
-                if (handler instanceof ConnectionHandler)
-                    ((ConnectionHandler) handler).onDisconnect(this, message, reconnect);
-                if (handler instanceof DisconnectEvent.Handler)
-                    ((DisconnectEvent.Handler) handler).onDisconnect(new DisconnectEvent(this, message, reconnect));
+            connection.send("QUIT :" + message, !toBoolean(Property.immediateDisconnect));
+            if (reconnect) {
+                try {
+                    breakThread();
+                    int sleepTime = toInteger(Property.sleepTime);
+                    while (state != State.idle) {
+                        Thread.sleep(sleepTime);
+                    }
+                    connect();
+                } catch (Exception e) {
+                    logError("[ArcheBot:disconnect] An internal exception has occurred (%s)", e);
+                }
             }
-
-            users.clear();
-            channels.clear();
-            servers.clear();
-            modes.clear();
-            super.modes.clear();
-
-            state = State.idle;
-
-            if (reconnect)
-                connect();
         }
     }
 
@@ -149,20 +106,6 @@ public class ArcheBot extends User {
         if (data.getChild("properties/" + property.fullName()).getContent().isEmpty() && !property.allowsEmpty())
             reset(property);
         return data.getChild("properties/" + property.fullName()).getContent();
-    }
-
-    public TreeSet<Mode> getAllModes() {
-        return new TreeSet<>(modes.values());
-    }
-
-    public TreeSet<Mode> getAllModes(Mode.Type type) {
-        if (type == Mode.Type.USER)
-            return new TreeSet<>(userModes.values());
-        TreeSet<Mode> typeModes = new TreeSet<>();
-        for (Mode mode : modes.values())
-            if (mode.getType() == type)
-                typeModes.add(mode);
-        return typeModes;
     }
 
     public Channel getChannel(String name) {
@@ -191,10 +134,6 @@ public class ArcheBot extends User {
 
     public HashSet<Handler> getHandlers() {
         return new HashSet<>(handlers);
-    }
-
-    public Mode getMode(char ID) {
-        return modes.containsKey(ID) ? modes.get(ID) : null;
     }
 
     public TreeSet<String> getRegisteredCommandIDs() {
@@ -226,14 +165,10 @@ public class ArcheBot extends User {
             return new User();
         if (!users.containsKey(nick.toLowerCase())) {
             User user = new User(nick);
-            users.put(nick.toLowerCase(), user);
+            addUser(user);
             updatePermissions(user);
         }
         return users.get(nick.toLowerCase());
-    }
-
-    public Mode getUserMode(char ID) {
-        return userModes.containsKey(ID) ? userModes.get(ID) : null;
     }
 
     public TreeSet<User> getUsers() {
@@ -244,10 +179,6 @@ public class ArcheBot extends User {
         return connection != null && state == State.connected;
     }
 
-    public boolean isMode(char ID) {
-        return modes.containsKey(ID);
-    }
-
     public boolean isRegistered(Command command) {
         return commands.containsValue(command);
     }
@@ -256,12 +187,12 @@ public class ArcheBot extends User {
         return commands.containsKey(ID.toLowerCase());
     }
 
-    public boolean isServer(String name) {
-        return servers.containsKey(name.toLowerCase());
+    public boolean isRegistered(Handler handler) {
+        return handlers.contains(handler);
     }
 
-    public boolean isUserMode(char ID) {
-        return userModes.containsKey(ID);
+    public boolean isServer(String name) {
+        return servers.containsKey(name.toLowerCase());
     }
 
     public void log(String line, Object... objects) {
@@ -333,7 +264,7 @@ public class ArcheBot extends User {
     }
 
     public void send(Output output) {
-        send(output.toString());
+        send(output.line);
     }
 
     public Object set(Property property, Object value) {
@@ -387,13 +318,6 @@ public class ArcheBot extends User {
         servers.put(server.name.toLowerCase(), server);
     }
 
-    void addServerMode(Mode mode) {
-        if (mode.isUser())
-            userModes.put(mode.getID(), mode);
-        else
-            modes.put(mode.getID(), mode);
-    }
-
     void addUser(User user) {
         users.put(user.nick.toLowerCase(), user);
     }
@@ -413,11 +337,38 @@ public class ArcheBot extends User {
             users.remove(nick.toLowerCase());
     }
 
+    @SuppressWarnings("unchecked")
+    void shutdown(String reason) {
+        connection.close();
+        connection = null;
+        connectTime = 0;
+
+        for (Handler handler : handlers) {
+            if (handler instanceof ConnectionHandler)
+                ((ConnectionHandler) handler).onDisconnect(this, reason);
+            if (handler instanceof DisconnectEvent.Handler)
+                ((DisconnectEvent.Handler) handler).onDisconnect(new DisconnectEvent(this, reason));
+        }
+        if (toBoolean(Property.autoSavePerms))
+            for (User user : getUsers())
+                savePermissions(user);
+        saveData();
+        log("Disconnected (%s)", reason);
+
+        users.clear();
+        channels.clear();
+        servers.clear();
+        modes.clear();
+        super.modes.clear();
+
+        state = State.idle;
+    }
+
     void updatePermissions(User user) {
         user.resetPermissions();
         if (data.getChild("permissions").isChild(user.nick))
             for (PMLElement permission : data.getChild("permissions/" + user.nick).getChildren())
-                user.give(Permission.get(permission.getTag().matches("^\\d+$") ? permission.getContent() : permission.getTag()));
+                user.give(Permission.get(permission.getTag().matches("^#\\d+$") ? permission.getContent() : permission.getTag()));
     }
 
     public interface Handler<B extends ArcheBot> {}

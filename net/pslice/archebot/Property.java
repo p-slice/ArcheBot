@@ -26,6 +26,7 @@ public enum Property {
 
     // IO-related properties
     enableColorShortcut ("io", true),
+    immediateDisconnect ("io", false),
     lineLength          ("io", 510),
     messageDelay        ("io", 1000),
     queueSize           ("io", 1000),
