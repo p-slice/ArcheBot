@@ -34,23 +34,10 @@ public enum Property {
     timeoutDelay        ("io", 240000), // Requires reconnecting the bot to apply changes
 
     // Logging-related properties
+    block         ("logging", ""),
     enableLogging ("logging", true),
-    logErrors     ("logging", true),
     logErrorTrace ("logging", true),
-    logGeneric    ("logging", true),
-    logInvites    ("logging", true),
-    logJoins      ("logging", true),
-    logKicks      ("logging", true),
-    logMessages   ("logging", true),
-    logModes      ("logging", true),
-    logMOTD       ("logging", true),
-    logNicks      ("logging", true),
-    logNotices    ("logging", true),
     logOutput     ("logging", true),
-    logParts      ("logging", true),
-    logPings      ("logging", true),
-    logQuits      ("logging", true),
-    logTopics     ("logging", true),
 
     // Nick-related properties
     checkNick    ("nick", false),

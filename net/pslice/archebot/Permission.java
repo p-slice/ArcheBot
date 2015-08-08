@@ -22,17 +22,24 @@ public class Permission implements Comparable<Permission> {
         return new TreeSet<>(inclusions);
     }
 
-    public void include(Permission... permissions) {
-        inclusions.addAll(Arrays.asList(permissions));
+    public void include(Permission permission, Permission... permissions) {
+        inclusions.add(permission);
+        if (permissions.length > 0)
+            inclusions.addAll(Arrays.asList(permissions));
     }
 
-    public void include(String... permissions) {
-        for (String permission : permissions)
-            inclusions.add(get(permission));
+    public void include(String permission, String... permissions) {
+        include(get(permission));
+        for (String p : permissions)
+            include(get(p));
     }
 
     public boolean includes(Permission permission) {
         return inclusions.contains(permission);
+    }
+
+    public boolean includes(String permission) {
+        return includes(get(permission));
     }
 
     @SuppressWarnings("NullableProblems")

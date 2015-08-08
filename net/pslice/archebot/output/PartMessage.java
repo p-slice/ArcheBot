@@ -1,9 +1,8 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
 
-public final class PartMessage extends ArcheBot.Output {
+public final class PartMessage extends Output {
 
     public PartMessage(Channel channel) {
         this(channel.name);

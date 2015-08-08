@@ -1,8 +1,6 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
-
-public final class Ping extends ArcheBot.Output {
+public final class Ping extends Output {
 
     public Ping() {
         this("" + System.currentTimeMillis());

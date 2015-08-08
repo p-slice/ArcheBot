@@ -1,9 +1,8 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Server;
 
-public final class VersionMessage extends ArcheBot.Output {
+public final class VersionMessage extends Output {
 
     public VersionMessage() {
         super("VERSION");

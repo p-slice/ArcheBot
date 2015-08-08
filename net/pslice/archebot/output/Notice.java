@@ -1,10 +1,9 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.User;
 
-public final class Notice extends ArcheBot.Output {
+public final class Notice extends Output {
 
     public Notice(Channel channel, String notice, Object... objects) {
         this(channel.name, notice, objects);

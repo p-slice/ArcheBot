@@ -1,8 +1,9 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.*;
+import net.pslice.archebot.Channel;
+import net.pslice.archebot.User;
 
-public final class RemoveModeMessage extends ArcheBot.Output {
+public final class RemoveModeMessage extends Output {
 
     public RemoveModeMessage(Channel channel, char mode) {
         this(channel.name, mode);

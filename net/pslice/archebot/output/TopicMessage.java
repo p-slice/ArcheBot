@@ -1,9 +1,8 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
 
-public final class TopicMessage extends ArcheBot.Output {
+public final class TopicMessage extends Output {
 
     public TopicMessage(Channel channel, String topic) {
         this(channel.name, topic);

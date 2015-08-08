@@ -1,9 +1,8 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.User;
 
-public final class ErrorMessage extends ArcheBot.Output {
+public final class ErrorMessage extends Output {
 
     public ErrorMessage(User user, String error, Object... objects) {
         this(user.getNick(), error, objects);

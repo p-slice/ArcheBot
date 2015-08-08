@@ -1,7 +1,6 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.events.DisconnectEvent;
-import net.pslice.archebot.handlers.ConnectionHandler;
+import net.pslice.archebot.output.Output;
 import net.pslice.utilities.PMLElement;
 import net.pslice.utilities.StringUtils;
 
@@ -15,7 +14,7 @@ import java.util.TreeSet;
 
 public class ArcheBot extends User {
 
-    public static final String VERSION = "1.16";
+    public static final String VERSION = "1.17";
     protected static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
     public String USER_VERSION = "[No user version specified]";
     final HashSet<Handler> handlers = new HashSet<>();
@@ -46,6 +45,17 @@ public class ArcheBot extends User {
             connection.breakThread();
         else
             logError("Unable to break handler thread (No active connection exists)");
+    }
+
+    public void clearServerData() {
+        if (toBoolean(Property.autoSavePerms))
+            for (User user : getUsers())
+                savePermissions(user);
+        saveData();
+        users.clear();
+        channels.clear();
+        servers.clear();
+        modes.clear();
     }
 
     public void connect() {
@@ -264,7 +274,7 @@ public class ArcheBot extends User {
     }
 
     public void send(Output output) {
-        send(output.line);
+        send(output.toString());
     }
 
     public Object set(Property property, Object value) {
@@ -343,24 +353,10 @@ public class ArcheBot extends User {
         connection = null;
         connectTime = 0;
 
-        for (Handler handler : handlers) {
-            if (handler instanceof ConnectionHandler)
-                ((ConnectionHandler) handler).onDisconnect(this, reason);
-            if (handler instanceof DisconnectEvent.Handler)
-                ((DisconnectEvent.Handler) handler).onDisconnect(new DisconnectEvent(this, reason));
-        }
-        if (toBoolean(Property.autoSavePerms))
-            for (User user : getUsers())
-                savePermissions(user);
-        saveData();
+        for (Handler handler : handlers)
+            handler.onDisconnect(this, reason);
+        clearServerData();
         log("Disconnected (%s)", reason);
-
-        users.clear();
-        channels.clear();
-        servers.clear();
-        modes.clear();
-        super.modes.clear();
-
         state = State.idle;
     }
 
@@ -369,44 +365,5 @@ public class ArcheBot extends User {
         if (data.getChild("permissions").isChild(user.nick))
             for (PMLElement permission : data.getChild("permissions/" + user.nick).getChildren())
                 user.give(Permission.get(permission.getTag().matches("^#\\d+$") ? permission.getContent() : permission.getTag()));
-    }
-
-    public interface Handler<B extends ArcheBot> {}
-
-    public static class Event<B extends ArcheBot> {
-
-        private final B bot;
-        private final long timeStamp = System.currentTimeMillis();
-
-        protected Event(B bot) {
-            this.bot = bot;
-        }
-
-        public B getBot() {
-            return bot;
-        }
-
-        public long getTimeStamp() {
-            return timeStamp;
-        }
-    }
-
-    public static class Output {
-
-        private final String line;
-
-        protected Output(String line) {
-            this.line = line;
-        }
-
-        @Override
-        public final String toString() {
-            return line;
-        }
-
-        @Override
-        public final boolean equals(Object obj) {
-            return obj instanceof Output && obj.toString().equals(line);
-        }
     }
 }

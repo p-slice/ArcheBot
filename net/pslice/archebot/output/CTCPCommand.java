@@ -1,10 +1,9 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.User;
 
-public final class CTCPCommand extends ArcheBot.Output {
+public final class CTCPCommand extends Output {
 
     public CTCPCommand(Channel channel, String command) {
         this(channel.name, command);

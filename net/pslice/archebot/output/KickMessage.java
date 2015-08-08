@@ -1,10 +1,9 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
 import net.pslice.archebot.Channel;
 import net.pslice.archebot.User;
 
-public final class KickMessage extends ArcheBot.Output {
+public final class KickMessage extends Output {
 
     public KickMessage(Channel channel, User user) {
         this(channel.name, user.getNick());

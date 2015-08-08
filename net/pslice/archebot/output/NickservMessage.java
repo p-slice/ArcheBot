@@ -1,8 +1,6 @@
 package net.pslice.archebot.output;
 
-import net.pslice.archebot.ArcheBot;
-
-public final class NickservMessage extends ArcheBot.Output {
+public final class NickservMessage extends Output {
 
     public NickservMessage(String nick, String password) {
         this(nick + " " + password);
