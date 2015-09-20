@@ -7,9 +7,9 @@ import java.util.TreeSet;
 
 public class Server implements Comparable<Server> {
 
-    public final String name;
+    protected final String name;
     protected final ArrayList<String> motd = new ArrayList<>();
-    protected final HashMap<String, String> info = new HashMap<>();
+    protected final HashMap<String, String> data = new HashMap<>();
     protected final HashMap<Character, ModeType> modes = new HashMap<>();
     protected final TreeSet<Character> userModes = new TreeSet<>();
     protected final HashMap<Character, Character> prefixes = new HashMap<>();
@@ -27,8 +27,8 @@ public class Server implements Comparable<Server> {
         return description;
     }
 
-    public String getInfo(String type) {
-        return info.containsKey(type) ? info.get(type) : null;
+    public String getData(String type) {
+        return data.containsKey(type) ? data.get(type) : null;
     }
 
     public char getMode(char prefix) {
@@ -49,6 +49,10 @@ public class Server implements Comparable<Server> {
 
     public ArrayList<String> getMotd() {
         return new ArrayList<>(motd);
+    }
+
+    public String getName() {
+        return name;
     }
 
     public HashSet<Character> getPrefixes() {

@@ -1,13 +1,13 @@
 package net.pslice.archebot;
 
-import net.pslice.utilities.StringUtils;
+import net.pslice.archebot.utilities.StringUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class Channel implements Comparable<Channel> {
 
-    public final String name;
+    protected final String name;
     protected final HashMap<User, HashSet<Character>> users = new HashMap<>();
     protected final HashMap<Character, String> modes = new HashMap<>();
     protected final HashMap<Character, HashSet<String>> listModes = new HashMap<>();
@@ -44,6 +44,10 @@ public class Channel implements Comparable<Channel> {
 
     public HashSet<Character> getModes(User user) {
         return users.containsKey(user) ? new HashSet<>(users.get(user)) : null;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getTopic() {

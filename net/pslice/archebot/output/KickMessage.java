@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class KickMessage extends Output {
 
     public KickMessage(Channel channel, User user) {
-        this(channel.name, user.getNick());
+        this(channel.getName(), user.getNick());
     }
 
     public KickMessage(String channel, String user) {
@@ -14,7 +14,7 @@ public final class KickMessage extends Output {
     }
 
     public KickMessage(Channel channel, User user, String reason, Object... objects) {
-        this(channel.name, user.getNick(), reason, objects);
+        this(channel.getName(), user.getNick(), reason, objects);
     }
 
     public KickMessage(String channel, String user, String reason, Object... objects) {

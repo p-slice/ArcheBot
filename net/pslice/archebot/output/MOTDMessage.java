@@ -9,7 +9,7 @@ public final class MOTDMessage extends Output {
     }
 
     public MOTDMessage(Server server) {
-        this(server.name);
+        this(server.getName());
     }
 
     public MOTDMessage(String server) {

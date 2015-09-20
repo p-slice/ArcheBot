@@ -9,7 +9,7 @@ public final class VersionMessage extends Output {
     }
 
     public VersionMessage(Server server) {
-        this(server.name);
+        this(server.getName());
     }
 
     public VersionMessage(String server) {

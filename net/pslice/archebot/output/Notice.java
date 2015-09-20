@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class Notice extends Output {
 
     public Notice(Channel channel, String notice, Object... objects) {
-        this(channel.name, notice, objects);
+        this(channel.getName(), notice, objects);
     }
 
     public Notice(User user, String notice, Object... objects) {

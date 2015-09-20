@@ -5,7 +5,7 @@ import net.pslice.archebot.Channel;
 public final class PartMessage extends Output {
 
     public PartMessage(Channel channel) {
-        this(channel.name);
+        this(channel.getName());
     }
 
     public PartMessage(String channel) {
@@ -13,7 +13,7 @@ public final class PartMessage extends Output {
     }
 
     public PartMessage(Channel channel, String reason, Object... objects) {
-        this(channel.name, reason, objects);
+        this(channel.getName(), reason, objects);
     }
 
     public PartMessage(String channel, String reason, Object... objects) {

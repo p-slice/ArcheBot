@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class AddModeMessage extends Output {
 
     public AddModeMessage(Channel channel, char mode) {
-        this(channel.name, mode);
+        this(channel.getName(), mode);
     }
 
     public AddModeMessage(String channel, char mode) {
@@ -14,7 +14,7 @@ public final class AddModeMessage extends Output {
     }
 
     public AddModeMessage(Channel channel, char mode, String value) {
-        this(channel.name, mode, value);
+        this(channel.getName(), mode, value);
     }
 
     public AddModeMessage(String channel, char mode, String value) {
@@ -22,7 +22,7 @@ public final class AddModeMessage extends Output {
     }
 
     public AddModeMessage(Channel channel, User user, char mode) {
-        this(channel.name, user.getNick(), mode);
+        this(channel.getName(), user.getNick(), mode);
     }
 
     public AddModeMessage(String channel, String user, char mode) {

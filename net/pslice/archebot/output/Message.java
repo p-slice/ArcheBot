@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class Message extends Output {
 
     public Message(Channel channel, String message, Object... objects) {
-        this(channel.name, message, objects);
+        this(channel.getName(), message, objects);
     }
 
     public Message(User user, String message, Object... objects) {

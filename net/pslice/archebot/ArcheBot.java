@@ -1,8 +1,8 @@
 package net.pslice.archebot;
 
 import net.pslice.archebot.output.Output;
-import net.pslice.utilities.PMLElement;
-import net.pslice.utilities.StringUtils;
+import net.pslice.archebot.utilities.PMLElement;
+import net.pslice.archebot.utilities.StringUtils;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -14,7 +14,7 @@ import java.util.TreeSet;
 
 public class ArcheBot extends User {
 
-    public static final String VERSION = "1.17";
+    public static final String VERSION = "1.18";
     protected static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
     public String USER_VERSION = "[No user version specified]";
     final HashSet<Handler> handlers = new HashSet<>();
@@ -97,25 +97,17 @@ public class ArcheBot extends User {
             logError("Unable to disconnect (No active connection exists)");
         else {
             connection.send("QUIT :" + message, !toBoolean(Property.immediateDisconnect));
-            if (reconnect) {
+            if (reconnect)
                 try {
                     breakThread();
                     int sleepTime = toInteger(Property.sleepTime);
-                    while (state != State.idle) {
+                    while (state != State.idle)
                         Thread.sleep(sleepTime);
-                    }
                     connect();
                 } catch (Exception e) {
                     logError("[ArcheBot:disconnect] An internal exception has occurred (%s)", e);
                 }
-            }
         }
-    }
-
-    public String get(Property property) {
-        if (data.getChild("properties/" + property.fullName()).getContent().isEmpty() && !property.allowsEmpty())
-            reset(property);
-        return data.getChild("properties/" + property.fullName()).getContent();
     }
 
     public Channel getChannel(String name) {
@@ -144,6 +136,12 @@ public class ArcheBot extends User {
 
     public HashSet<Handler> getHandlers() {
         return new HashSet<>(handlers);
+    }
+
+    public String getProperty(Property property) {
+        if (data.getChild("properties/" + property.fullName()).getContent().isEmpty() && !property.allowsEmpty())
+            reset(property);
+        return data.getChild("properties/" + property.fullName()).getContent();
     }
 
     public TreeSet<String> getRegisteredCommandIDs() {
@@ -232,7 +230,7 @@ public class ArcheBot extends User {
         if (directory != null) {
             if (new File(directory).mkdir())
                 log("New directory created.");
-            data = PMLElement.read((directory.isEmpty() ? "" : directory + File.separator) + "bot", "bot");
+            data = PMLElement.read((directory.isEmpty() ? "" : directory + File.separator) + "bot");
         } else
             data = new PMLElement("bot");
         PMLElement properties = data.getChild("properties");
@@ -247,15 +245,15 @@ public class ArcheBot extends User {
     }
 
     public Object reset(Property property) {
-        return set(property, property.defaultValue);
+        return setProperty(property, property.defaultValue);
     }
 
     public void savePermissions(User user) {
         PMLElement permData = data.getChild("permissions/" + user);
         if (permData.size() > 0)
             permData.removeChildren();
-        for (Permission permission : user.permissions)
-            if (permission != Permission.DEFAULT)
+        for (Permission permission : user.permissions.keySet())
+            if (user.isSavable(permission))
                 permData.getChild("#").setContent(permission.toString());
         if (permData.size() == 0)
             permData.setParent(null);
@@ -264,22 +262,20 @@ public class ArcheBot extends User {
     public void saveData() {
         if (directory != null)
             data.write((directory.isEmpty() ? "" : directory + File.separator) + "bot");
+        else
+            logError("Unable to save properties file (Directory must be specified)");
     }
 
     public void send(String output, Object... objects) {
+        output = String.format(output, objects);
         if (isConnected())
-            connection.send(String.format(output, objects), true);
+            connection.send(output, true);
         else
-            logError("Unable to send output (No active connection exists)");
+            logError("Unable to send output [%s] (No active connection exists)", output);
     }
 
     public void send(Output output) {
         send(output.toString());
-    }
-
-    public Object set(Property property, Object value) {
-        data.getChild("properties/" + property.fullName()).setContent(value.toString());
-        return value;
     }
 
     public void setDirectory(String directory) {
@@ -290,12 +286,17 @@ public class ArcheBot extends User {
         this.stream = stream;
     }
 
+    public Object setProperty(Property property, Object value) {
+        data.getChild("properties/" + property.fullName()).setContent(value.toString());
+        return value;
+    }
+
     public boolean toBoolean(Property property) {
-        return StringUtils.toBoolean(get(property));
+        return StringUtils.toBoolean(getProperty(property));
     }
 
     public int toInteger(Property property) {
-        String value = get(property);
+        String value = getProperty(property);
         if (value.matches("\\d+"))
             return Integer.parseInt(value);
         else if (property.defaultValue instanceof Integer)
@@ -342,6 +343,11 @@ public class ArcheBot extends User {
             channels.remove(name.toLowerCase());
     }
 
+    void removeUser(User user) {
+        savePermissions(user);
+        removeUser(user.nick);
+    }
+
     void removeUser(String nick) {
         if (users.containsKey(nick.toLowerCase()))
             users.remove(nick.toLowerCase());
@@ -349,12 +355,12 @@ public class ArcheBot extends User {
 
     @SuppressWarnings("unchecked")
     void shutdown(String reason) {
+        state = State.disconnecting;
         connection.close();
         connection = null;
-        connectTime = 0;
-
         for (Handler handler : handlers)
             handler.onDisconnect(this, reason);
+        connectTime = 0;
         clearServerData();
         log("Disconnected (%s)", reason);
         state = State.idle;
@@ -364,6 +370,6 @@ public class ArcheBot extends User {
         user.resetPermissions();
         if (data.getChild("permissions").isChild(user.nick))
             for (PMLElement permission : data.getChild("permissions/" + user.nick).getChildren())
-                user.give(Permission.get(permission.getTag().matches("^#\\d+$") ? permission.getContent() : permission.getTag()));
+                user.givePermission(Permission.get(permission.getTag().matches("^#\\d+$") ? permission.getContent() : permission.getTag()));
     }
 }

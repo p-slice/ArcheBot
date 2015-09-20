@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class InviteMessage extends Output {
 
     public InviteMessage(Channel channel, User user) {
-        this(channel.name, user.getNick());
+        this(channel.getName(), user.getNick());
     }
 
     public InviteMessage(String channel, String user) {

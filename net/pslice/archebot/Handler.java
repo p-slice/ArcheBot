@@ -2,81 +2,260 @@ package net.pslice.archebot;
 
 public class Handler<B extends ArcheBot> {
 
-    // Override this to handle channel actions.
+    /**
+     * Runs when an action to a channel is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the action was sent to
+     * @param user The user who sent the action
+     * @param action The action that was sent
+     */
     public void onAction(B bot, Channel channel, User user, String action) {}
 
-    // Override this to handle private actions.
+    /**
+     * Runs when an action to the bot is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who sent the action
+     * @param action The action that was sent
+     */
     public void onAction(B bot, User user, String action) {}
 
-    // Override this to handle server code messages.
+    /**
+     * Runs when a 3-digit numeric code is received
+     *
+     * @param bot The bot that received the message
+     * @param code The 3-digit code
+     * @param args The additional arguments that were received
+     * @param tail The last argument
+     */
     public void onCode(B bot, int code, String[] args, String tail) {}
 
-    // Override this to handle commands.
+    /**
+     * Runs when a command is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the command was sent to
+     * @param user The user who sent the command
+     * @param command The command that was sent
+     * @param args The additional arguments that were received
+     */
     public void onCommand(B bot, Channel channel, User user, Command<B> command, String[] args) {}
 
-    // Override this to handle connects.
+    /**
+     * Runs when a connection is successfully made
+     *
+     * @param bot The bot that connected
+     */
     public void onConnect(B bot) {}
 
-    // Override this to handle channel CTCP commands.
+    /**
+     * Runs when a CTCP command to a channel is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the CTCP command was sent to
+     * @param user The user who sent the CTCP command
+     * @param command The CTCP command that was sent
+     * @param args The additional arguments that were received
+     */
     public void onCTCPCommand(B bot, Channel channel, User user, String command, String args) {}
 
-    // Override this to handle private CTCP commands.
+    /**
+     * Runs when a CTCP command to the bot is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who sent the CTCP command
+     * @param command The CTCP command that was sent
+     * @param args The additional arguments that were received
+     */
     public void onCTCPCommand(B bot, User user, String command, String args) {}
 
-    /// Override this to handle disconnects
+    /**
+     * Runs when the bot becomes disconnected from a server
+     *
+     * @param bot The bot that disconnected
+     * @param reason The reason for disconnected
+     */
     public void onDisconnect(B bot, String reason) {}
 
-    // Override this to handle invites
+    /**
+     * Runs when a channel invite is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the invite is for
+     * @param user The user who sent the invite
+     */
     public void onInvite(B bot, Channel channel, User user) {}
 
-    // Override this to handle joins
+    /**
+     * Runs when a join message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the user joined
+     * @param user The user who joined the channel
+     */
     public void onJoin(B bot, Channel channel, User user) {}
 
-    // Override this to handle kicks
+    /**
+     * Runs when a kick message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the user was kicked from
+     * @param kicker The user who kicked the receiver
+     * @param receiver The user who was kicked by the kicker
+     * @param reason The reason why the user was kicked
+     */
     public void onKick(B bot, Channel channel, User kicker, User receiver, String reason) {}
 
-    // Override this to handle all server lines
+    /**
+     * Runs when any line is received
+     *
+     * @param bot The bot that received the message
+     * @param command The type of message received
+     * @param args The additional arguments that were received
+     * @param tail The last argument
+     */
     public void onLine(B bot, String command, String[] args, String tail) {}
 
-    // Override this to handle channel messages
+    /**
+     * Runs when a message to a channel is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the message was sent to
+     * @param user The user who sent the message
+     * @param message The message that was sent
+     */
     public void onMessage(B bot, Channel channel, User user, String message) {}
 
-    // Override this to handle private messages
+    /**
+     * Runs when a message to the bot is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who sent the message
+     * @param message The message that was sent
+     */
     public void onMessage(B bot, User user, String message) {}
 
-    // Override this to handle generic channel modes
+    /**
+     * Runs when a channel mode message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that had the mode change
+     * @param user The user who changed the mode
+     * @param mode The mode that was changed
+     * @param value The new value of the mode
+     * @param added Whether the mode was added or removed
+     */
     public void onMode(B bot, Channel channel, User user, char mode, String value, boolean added) {}
 
-    // Override this to handle channel-user status modes
+    /**
+     * Runs when a channel/user mode message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that had the mode change
+     * @param setter The user who changed the receiver's mode
+     * @param receiver The user whose mode was changed by the setter
+     * @param mode The mode that was changed
+     * @param added Whether the mode was added or removed
+     */
     public void onMode(B bot, Channel channel, User setter, User receiver, char mode, boolean added) {}
 
-    // Override this to handle user moves
+    /**
+     * Runs when a user mode message is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user whose mode was changed
+     * @param mode The mode that was changed
+     * @param added Whether the mode was added or removed
+     */
     public void onMode(B bot, User user, char mode, boolean added) {}
 
-    // Override this to handle MOTD messages
+    /**
+     * Runs when a MOTD completed message is received
+     *
+     * @param bot The bot that received the message
+     * @param server The server that the MOTD is for
+     */
     public void onMOTD(B bot, Server server) {}
 
-    // Override this to handle nick changes
+    /**
+     * Runs when a nick message is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who changed their nick
+     * @param oldNick The user's previous nick
+     */
     public void onNick(B bot, User user, String oldNick) {}
 
-    // Override this to handle channel notices
+    /**
+     * Runs when a notice to a channel is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the notice was sent to
+     * @param user The user who sent the notice
+     * @param notice The notice that was sent
+     */
     public void onNotice(B bot, Channel channel, User user, String notice) {}
 
-    // Override this to handle private notices
+    /**
+     * Runs when a notice to the bot is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who sent the notice
+     * @param notice The notice that was sent
+     */
     public void onNotice(B bot, User user, String notice) {}
 
-    // Override this to handle parts
+    /**
+     * Runs when a part message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that the user is parting from
+     * @param user The user who parted from the channel
+     * @param reason The reason why the user parted the channel
+     */
     public void onPart(B bot, Channel channel, User user, String reason) {}
 
-    // Override this to handle pings
+    /**
+     * Runs when a ping is received
+     *
+     * @param bot The bot that received the message
+     */
     public void onPing(B bot) {}
 
-    // Override this to handle pongs
+    /**
+     * Runs when a pong is received
+     *
+     * @param bot The bot that received the message
+     * @param server The server that the pong was received from
+     * @param message The message sent with the pong
+     */
     public void onPong(B bot, Server server, String message) {}
 
-    // Override this to handle quits
+    /**
+     * Runs when a quit message is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who quit
+     * @param reason The reason why the user quit
+     */
     public void onQuit(B bot, User user, String reason) {}
 
-    // Override this to handle topic changes
+    /**
+     * Runs when a topic message is received
+     *
+     * @param bot The bot that received the message
+     * @param channel The channel that had the topic change
+     * @param user The user who changed the topic
+     * @param topic The new channel topic
+     */
     public void onTopic(B bot, Channel channel, User user, String topic) {}
+
+    /**
+     * Runs when a whois completed message is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user targeted by the whois
+     */
+    public void onWhois(B bot, User user) {}
 }

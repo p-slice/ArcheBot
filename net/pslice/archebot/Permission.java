@@ -10,7 +10,7 @@ public class Permission implements Comparable<Permission> {
     public static final Permission DEFAULT = new Permission("default"),
                                    OPERATOR = new Permission("operator"),
                                    IGNORE = new Permission("ignore");
-    public final String name;
+    protected final String name;
     private final TreeSet<Permission> inclusions = new TreeSet<>();
 
     private Permission(String name) {
@@ -20,6 +20,10 @@ public class Permission implements Comparable<Permission> {
 
     public TreeSet<Permission> getInclusions() {
         return new TreeSet<>(inclusions);
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void include(Permission permission, Permission... permissions) {

@@ -6,7 +6,7 @@ import net.pslice.archebot.User;
 public final class CTCPCommand extends Output {
 
     public CTCPCommand(Channel channel, String command) {
-        this(channel.name, command);
+        this(channel.getName(), command);
     }
 
     public CTCPCommand(User user, String command) {
@@ -18,7 +18,7 @@ public final class CTCPCommand extends Output {
     }
 
     public CTCPCommand(Channel channel, String command, String message, Object... objects) {
-        this(channel.name, command, message, objects);
+        this(channel.getName(), command, message, objects);
     }
 
     public CTCPCommand(User user, String command, String message, Object... objects) {
