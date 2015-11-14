@@ -8,6 +8,10 @@ public class StringUtils {
 
     private StringUtils() {}
 
+    public static String[] breakList(String items) {
+        return items.replace(',', ' ').replaceAll(" +", " ").split(" ");
+    }
+
     public static <S> String compact(S[] args) {
         return compact(args, 0);
     }
@@ -35,15 +39,14 @@ public class StringUtils {
         String string = "";
         for (S arg : args)
             string += separator + arg;
-        return string.substring(separator.length());
+        return args.size() > 0 ? string.substring(separator.length()) : string;
     }
 
-    public static String[] breakList(String items) {
-        return items.replace(',', ' ').replaceAll(" +", " ").split(" ");
-    }
-
-    public static boolean toBoolean(String string) {
-        return string.toLowerCase().equals("true");
+    public static String repeat(String string, int repeat) {
+        String repeated = "";
+        for (int i = 0; i < repeat; i++)
+            repeated += string;
+        return repeated;
     }
 
     public static String[] splitArgs(String string) {
@@ -93,5 +96,8 @@ public class StringUtils {
             strings.add(current);
         return strings.toArray(new String[strings.size()]);
     }
-}
 
+    public static boolean toBoolean(String string) {
+        return string.toLowerCase().equals("true");
+    }
+}

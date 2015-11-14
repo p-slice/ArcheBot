@@ -10,6 +10,6 @@ public final class InviteMessage extends Output {
     }
 
     public InviteMessage(String channel, String user) {
-        super("INVITE " + user + " " + channel);
+        super(String.format("INVITE %s %s", user, channel));
     }
 }

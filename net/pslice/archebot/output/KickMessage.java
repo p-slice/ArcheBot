@@ -18,6 +18,6 @@ public final class KickMessage extends Output {
     }
 
     public KickMessage(String channel, String user, String reason, Object... objects) {
-        super("KICK " + channel + " " + user + " :" + String.format(reason, objects));
+        super(String.format("KICK %s %s :%s", channel, user, objects.length > 0 ? String.format(reason, objects) : reason));
     }
 }

@@ -14,6 +14,6 @@ public final class Notice extends Output {
     }
 
     public Notice(String target, String notice, Object... objects) {
-        super("NOTICE " + target + " :" + String.format(notice, objects));
+        super(String.format("NOTICE %s :%s", target, objects.length > 0 ? String.format(notice, objects) : notice));
     }
 }

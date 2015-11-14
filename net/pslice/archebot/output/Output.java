@@ -8,6 +8,10 @@ public class Output {
         this.line = line;
     }
 
+    public String getLine() {
+        return line;
+    }
+
     @Override
     public final String toString() {
         return line;

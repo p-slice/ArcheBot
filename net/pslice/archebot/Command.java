@@ -5,20 +5,20 @@ import net.pslice.archebot.utilities.StringUtils;
 public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
 
     protected final String name;
-    protected final String[] IDs;
+    protected final String[] ids;
     protected Permission permission = Permission.DEFAULT;
     protected String parameters = "[No parameters specified]", description = "[No description specified]";
-    protected boolean enabled = true, requireID = false;
+    protected boolean enabled = true, requireId = false;
 
-    public Command(String name, String... IDs) {
+    public Command(String name, String... ids) {
         this.name = name;
-        this.IDs = IDs;
+        this.ids = ids;
     }
 
     public String details() {
-        return String.format("%s {PERMISSION:%s} {PARAMETERS:%s} {DESCRIPTION:%s} {ENABLED:%b}%s",
-                name, permission, parameters, description, enabled,
-                IDs.length > 0 ? " {IDs:" + StringUtils.compact(IDs, 0, ",") + "}" : "");
+        return String.format("%s {PERMISSION:%s} {PARAMETERS:%s} {DESCRIPTION:%s} {ENABLED:%b} {REQUIREID:%s}%s",
+                name, permission, parameters, description, enabled, requireId,
+                ids.length > 0 ? " {IDS:" + StringUtils.compact(ids, ",") + "}" : "");
     }
 
     public abstract void execute(B bot, Channel channel, User sender, String[] args);
@@ -27,8 +27,8 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
         return description;
     }
 
-    public String[] getIDs() {
-        return IDs;
+    public String[] getIds() {
+        return ids;
     }
 
     public String getName() {
@@ -48,11 +48,11 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
     }
 
     public boolean requiresIdentification() {
-        return requireID;
+        return requireId;
     }
 
-    public void requiresIdentification(boolean requireID) {
-        this.requireID = requireID;
+    public void requiresIdentification(boolean requireId) {
+        this.requireId = requireId;
     }
 
     public void setDescription(String description) {

@@ -17,15 +17,11 @@ public final class AddModeMessage extends Output {
         this(channel.getName(), mode, value);
     }
 
+    public AddModeMessage(Channel channel, char mode, User user) {
+        this(channel.getName(), mode, user.getNick());
+    }
+
     public AddModeMessage(String channel, char mode, String value) {
-        super("MODE " + channel + " +" + mode + (value.isEmpty() ? "" : " " + value));
-    }
-
-    public AddModeMessage(Channel channel, User user, char mode) {
-        this(channel.getName(), user.getNick(), mode);
-    }
-
-    public AddModeMessage(String channel, String user, char mode) {
-        super("MODE " + channel + " +" + mode + " " + user);
+        super(String.format("MODE %s +%s %s", channel, mode, value));
     }
 }

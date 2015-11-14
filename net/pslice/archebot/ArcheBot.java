@@ -1,7 +1,7 @@
 package net.pslice.archebot;
 
 import net.pslice.archebot.output.Output;
-import net.pslice.archebot.utilities.PMLElement;
+import net.pslice.archebot.utilities.Element;
 import net.pslice.archebot.utilities.StringUtils;
 
 import java.io.File;
@@ -14,18 +14,18 @@ import java.util.TreeSet;
 
 public class ArcheBot extends User {
 
-    public static final String VERSION = "1.18";
+    public static final String VERSION = "1.19";
     protected static final SimpleDateFormat dateFormat = new SimpleDateFormat("[HH:mm:ss:SSS] ");
     public String USER_VERSION = "[No user version specified]";
     final HashSet<Handler> handlers = new HashSet<>();
     State state = State.idle;
-    private final TreeMap<String, Channel> channels = new TreeMap<>();
-    private final TreeMap<String, User> users = new TreeMap<>();
+    ChannelMap channelMap = new ChannelMap();
+    ServerMap serverMap = new ServerMap();
+    UserMap userMap = new UserMap(this);
     private final TreeMap<String, Command> commands = new TreeMap<>();
-    private final TreeMap<String, Server> servers = new TreeMap<>();
     private final long startTime = System.currentTimeMillis();
     private String directory;
-    private PMLElement data;
+    private Element data;
     private PrintStream stream = System.out;
     private Connection connection;
     private long connectTime = 0;
@@ -48,14 +48,17 @@ public class ArcheBot extends User {
     }
 
     public void clearServerData() {
-        if (toBoolean(Property.autoSavePerms))
-            for (User user : getUsers())
+        if (getBoolean(Property.autoSavePerms))
+            for (User user : userMap.getUsers())
                 savePermissions(user);
-        saveData();
-        users.clear();
-        channels.clear();
-        servers.clear();
+        if (directory != null)
+            saveData();
+        channelMap = new ChannelMap();
+        serverMap = new ServerMap();
+        userMap = new UserMap(this);
         modes.clear();
+        if (isConnected())
+            userMap.addUser(this);
     }
 
     public void connect() {
@@ -67,14 +70,13 @@ public class ArcheBot extends User {
                 state = State.connecting;
                 connection = new Connection(this);
                 connectTime = System.currentTimeMillis();
-                addUser(this);
             } catch (Exception e) {
-                boolean reconnect = toBoolean(Property.reconnect);
+                boolean reconnect = getBoolean(Property.reconnect);
                 logError("[ArcheBot:connect] An internal exception has occurred (%s)", e);
                 log("Disconnected (A fatal exception occurred while connecting | Reconnect: %b)", reconnect);
                 if (reconnect) {
                     try {
-                        Thread.sleep(toInteger(Property.reconnectDelay));
+                        Thread.sleep(getInteger(Property.reconnectDelay));
                     } catch (InterruptedException ie) {
                         logError("[ArcheBot:connect] An internal exception has occurred (%s)", ie);
                     }
@@ -96,11 +98,11 @@ public class ArcheBot extends User {
         if (!isConnected())
             logError("Unable to disconnect (No active connection exists)");
         else {
-            connection.send("QUIT :" + message, !toBoolean(Property.immediateDisconnect));
+            connection.send("QUIT :" + message, !getBoolean(Property.immediateDisconnect));
             if (reconnect)
                 try {
                     breakThread();
-                    int sleepTime = toInteger(Property.sleepTime);
+                    int sleepTime = getInteger(Property.sleepTime);
                     while (state != State.idle)
                         Thread.sleep(sleepTime);
                     connect();
@@ -110,16 +112,16 @@ public class ArcheBot extends User {
         }
     }
 
-    public Channel getChannel(String name) {
-        return channels.containsKey(name.toLowerCase()) ? channels.get(name.toLowerCase()) : new Channel(name);
+    public boolean getBoolean(Property property) {
+        return StringUtils.toBoolean(getProperty(property));
     }
 
-    public TreeSet<Channel> getChannels() {
-        return new TreeSet<>(channels.values());
+    public ChannelMap getChannelMap() {
+        return channelMap;
     }
 
-    public Command getCommand(String ID) {
-        return commands.containsKey(ID.toLowerCase()) ? commands.get(ID.toLowerCase()) : null;
+    public Command getCommand(String id) {
+        return isRegistered(id) ? commands.get(id.toLowerCase()) : null;
     }
 
     public TreeSet<Command> getCommands() {
@@ -130,7 +132,7 @@ public class ArcheBot extends User {
         return directory;
     }
 
-    public PMLElement getData(String name) {
+    public Element getData(String name) {
         return data.getChild(name);
     }
 
@@ -138,13 +140,23 @@ public class ArcheBot extends User {
         return new HashSet<>(handlers);
     }
 
-    public String getProperty(Property property) {
-        if (data.getChild("properties/" + property.fullName()).getContent().isEmpty() && !property.allowsEmpty())
-            reset(property);
-        return data.getChild("properties/" + property.fullName()).getContent();
+    public int getInteger(Property property) {
+        String value = getProperty(property);
+        if (value.matches("\\d+"))
+            return Integer.parseInt(value);
+        else if (property.defaultValue instanceof Integer)
+            return (int) reset(property);
+        throw new RuntimeException("Cannot convert the value of " + property.name() + " to an integer.");
     }
 
-    public TreeSet<String> getRegisteredCommandIDs() {
+    public String getProperty(Property property) {
+        Element e = data.getChild("properties/" + property.fullName());
+        if (!e.hasContent() && !property.allowsEmpty())
+            reset(property);
+        return e.getContent();
+    }
+
+    public TreeSet<String> getRegisteredCommandIds() {
         return new TreeSet<>(commands.keySet());
     }
 
@@ -152,12 +164,8 @@ public class ArcheBot extends User {
         return System.currentTimeMillis() - startTime;
     }
 
-    public Server getServer(String name) {
-        return servers.containsKey(name.toLowerCase()) ? servers.get(name.toLowerCase()) : new Server(name);
-    }
-
-    public TreeSet<Server> getServers() {
-        return new TreeSet<>(servers.values());
+    public ServerMap getServerMap() {
+        return serverMap;
     }
 
     public State getState() {
@@ -168,19 +176,8 @@ public class ArcheBot extends User {
         return isConnected() ? System.currentTimeMillis() - connectTime : -1;
     }
 
-    public User getUser(String nick) {
-        if (nick.isEmpty())
-            return new User();
-        if (!users.containsKey(nick.toLowerCase())) {
-            User user = new User(nick);
-            addUser(user);
-            updatePermissions(user);
-        }
-        return users.get(nick.toLowerCase());
-    }
-
-    public TreeSet<User> getUsers() {
-        return new TreeSet<>(users.values());
+    public UserMap getUserMap() {
+        return userMap;
     }
 
     public boolean isConnected() {
@@ -191,31 +188,30 @@ public class ArcheBot extends User {
         return commands.containsValue(command);
     }
 
-    public boolean isRegistered(String ID) {
-        return commands.containsKey(ID.toLowerCase());
+    public boolean isRegistered(String id) {
+        return commands.containsKey(id.toLowerCase());
     }
 
     public boolean isRegistered(Handler handler) {
         return handlers.contains(handler);
     }
 
-    public boolean isServer(String name) {
-        return servers.containsKey(name.toLowerCase());
-    }
-
     public void log(String line, Object... objects) {
-        print("<>", String.format(line, objects));
+        print("<>", objects.length > 0 ? String.format(line, objects) : line);
     }
 
     public void logError(String error, Object... objects) {
-        print("== Error:", String.format(error, objects));
+        print("== Error:", objects.length > 0 ? String.format(error, objects) : error);
     }
 
-    public void register(Command... commands) {
-        for (Command command : commands) {
-            this.commands.put(command.name.toLowerCase(), command);
-            for (String ID : command.IDs)
-                this.commands.put(ID.toLowerCase(), command);
+    public void register(Command command, Command... commands) {
+        this.commands.put(command.name.toLowerCase(), command);
+        for (String id : command.ids)
+            this.commands.put(id.toLowerCase(), command);
+        for (Command cmd : commands) {
+            this.commands.put(cmd.name.toLowerCase(), cmd);
+            for (String id : cmd.ids)
+                this.commands.put(id.toLowerCase(), cmd);
         }
     }
 
@@ -227,21 +223,26 @@ public class ArcheBot extends User {
         if (directory == null && data != null)
             return;
 
-        if (directory != null) {
-            if (new File(directory).mkdir())
-                log("New directory created.");
-            data = PMLElement.read((directory.isEmpty() ? "" : directory + File.separator) + "bot");
-        } else
-            data = new PMLElement("bot");
-        PMLElement properties = data.getChild("properties");
+        try {
+            if (directory != null) {
+                if (new File(directory).mkdir())
+                    log("New directory created.");
+                data = Element.read((directory.isEmpty() ? "" : directory + File.separator) + "bot");
+            } else
+                data = new Element("bot");
+            Element properties = data.getChild("properties");
 
-        for (Property property : Property.values())
-            if (!properties.isChild(property.fullName()))
-                reset(property);
-        for (User user : users.values())
-            updatePermissions(user);
+            for (Property property : Property.values())
+                if (!properties.isChild(property.fullName()))
+                    reset(property);
+            for (User user : userMap.getUsers())
+                updatePermissions(user);
 
-        saveData();
+            if (directory != null)
+                saveData();
+        } catch (Exception e) {
+            logError("[ArcheBot:reload] Unable to reload: " + e);
+        }
     }
 
     public Object reset(Property property) {
@@ -249,25 +250,26 @@ public class ArcheBot extends User {
     }
 
     public void savePermissions(User user) {
-        PMLElement permData = data.getChild("permissions/" + user);
+        Element permData = data.getChild("permissions/" + user);
         if (permData.size() > 0)
             permData.removeChildren();
         for (Permission permission : user.permissions.keySet())
             if (user.isSavable(permission))
                 permData.getChild("#").setContent(permission.toString());
         if (permData.size() == 0)
-            permData.setParent(null);
+            data.getChild("permissions").removeChild(permData);
     }
 
     public void saveData() {
         if (directory != null)
             data.write((directory.isEmpty() ? "" : directory + File.separator) + "bot");
         else
-            logError("Unable to save properties file (Directory must be specified)");
+            logError("Unable to save data file (Directory must be specified)");
     }
 
     public void send(String output, Object... objects) {
-        output = String.format(output, objects);
+        if (objects.length > 0)
+            output = String.format(output, objects);
         if (isConnected())
             connection.send(output, true);
         else
@@ -275,7 +277,7 @@ public class ArcheBot extends User {
     }
 
     public void send(Output output) {
-        send(output.toString());
+        send(output.getLine());
     }
 
     public void setDirectory(String directory) {
@@ -291,29 +293,16 @@ public class ArcheBot extends User {
         return value;
     }
 
-    public boolean toBoolean(Property property) {
-        return StringUtils.toBoolean(getProperty(property));
-    }
-
-    public int toInteger(Property property) {
-        String value = getProperty(property);
-        if (value.matches("\\d+"))
-            return Integer.parseInt(value);
-        else if (property.defaultValue instanceof Integer)
-            return (int) reset(property);
-        throw new RuntimeException("Cannot convert the value of " + property.name() + " to an integer.");
-    }
-
     public void unregister(Command command) {
         unregister(command.name);
-        for (String ID : command.IDs)
+        for (String ID : command.ids)
             if (getCommand(ID) == command)
                 unregister(ID);
     }
 
-    public void unregister(String ID) {
-        if (commands.containsKey(ID.toLowerCase()))
-            commands.remove(ID.toLowerCase());
+    public void unregister(String id) {
+        if (commands.containsKey(id.toLowerCase()))
+            commands.remove(id.toLowerCase());
     }
 
     public void unregister(Handler handler) {
@@ -321,36 +310,9 @@ public class ArcheBot extends User {
             handlers.remove(handler);
     }
 
-    void addChannel(Channel channel) {
-        channels.put(channel.name.toLowerCase(), channel);
-    }
-
-    void addServer(Server server) {
-        servers.put(server.name.toLowerCase(), server);
-    }
-
-    void addUser(User user) {
-        users.put(user.nick.toLowerCase(), user);
-    }
-
     synchronized void print(String prefix, String line) {
-        if (data == null || toBoolean(Property.enableLogging))
+        if (data == null || getBoolean(Property.enableLogging))
             stream.println(dateFormat.format(new Date()) + prefix + " " + line);
-    }
-
-    void removeChannel(String name) {
-        if (channels.containsKey(name.toLowerCase()))
-            channels.remove(name.toLowerCase());
-    }
-
-    void removeUser(User user) {
-        savePermissions(user);
-        removeUser(user.nick);
-    }
-
-    void removeUser(String nick) {
-        if (users.containsKey(nick.toLowerCase()))
-            users.remove(nick.toLowerCase());
     }
 
     @SuppressWarnings("unchecked")
@@ -369,7 +331,7 @@ public class ArcheBot extends User {
     void updatePermissions(User user) {
         user.resetPermissions();
         if (data.getChild("permissions").isChild(user.nick))
-            for (PMLElement permission : data.getChild("permissions/" + user.nick).getChildren())
-                user.givePermission(Permission.get(permission.getTag().matches("^#\\d+$") ? permission.getContent() : permission.getTag()));
+            for (Element permission : data.getChild("permissions/" + user.nick).getChildren())
+                user.givePermission(Permission.get(permission.getTag().equals("#") ? permission.getContent() : permission.getTag()));
     }
 }

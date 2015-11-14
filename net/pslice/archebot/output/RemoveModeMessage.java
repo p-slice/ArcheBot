@@ -10,22 +10,18 @@ public final class RemoveModeMessage extends Output {
     }
 
     public RemoveModeMessage(String channel, char mode) {
-        super("MODE " + channel + " -" + mode);
+        this(channel, mode, "");
     }
 
     public RemoveModeMessage(Channel channel, char mode, String value) {
         this(channel.getName(), mode, value);
     }
 
+    public RemoveModeMessage(Channel channel, char mode, User user) {
+        this(channel.getName(), mode, user.getNick());
+    }
+
     public RemoveModeMessage(String channel, char mode, String value) {
-        super("MODE " + channel + " -" + mode + " " + value);
-    }
-
-    public RemoveModeMessage(Channel channel, User user, char mode) {
-        this(channel.getName(), user.getNick(), mode);
-    }
-
-    public RemoveModeMessage(String channel, String user, char mode) {
-        super("MODE " + channel + " -" + mode + " " + user);
+        super(String.format("MODE %s -%s %s", channel, mode, value));
     }
 }

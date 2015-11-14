@@ -12,6 +12,7 @@ public class Channel implements Comparable<Channel> {
     protected final HashMap<Character, String> modes = new HashMap<>();
     protected final HashMap<Character, HashSet<String>> listModes = new HashMap<>();
     protected String topic = "", topicSetter = "";
+    protected long topicTimestamp = -1;
 
     protected Channel(String name) {
         this.name = name;
@@ -22,8 +23,7 @@ public class Channel implements Comparable<Channel> {
     }
 
     public String details() {
-        return String.format("%s {MODES:%s} {USERS:%d} {TOPIC:%s}",
-                name, StringUtils.compact(modes.keySet(), ""), users.size(), topic);
+        return String.format("%s {MODES:%s} {USERS:%d} {TOPIC:%s}", name, StringUtils.compact(modes.keySet(), ""), users.size(), topic);
     }
 
     public String getValue(char mode) {
@@ -56,6 +56,10 @@ public class Channel implements Comparable<Channel> {
 
     public String getTopicSetter() {
         return topicSetter;
+    }
+
+    public long getTopicTimestamp() {
+        return topicTimestamp;
     }
 
     public HashSet<User> getUsers() {
@@ -139,13 +143,5 @@ public class Channel implements Comparable<Channel> {
 
     void removeUser(User user) {
         users.remove(user);
-    }
-
-    void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    void setTopicSetter(String topicSetter) {
-        this.topicSetter = topicSetter;
     }
 }

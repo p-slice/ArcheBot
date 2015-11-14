@@ -17,6 +17,6 @@ public final class PartMessage extends Output {
     }
 
     public PartMessage(String channel, String reason, Object... objects) {
-        super("PART " + channel + " :" + String.format(reason, objects));
+        super(String.format("PART %s :%s", channel, objects.length > 0 ? String.format(reason, objects) : reason));
     }
 }

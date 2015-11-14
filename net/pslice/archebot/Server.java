@@ -1,16 +1,15 @@
 package net.pslice.archebot;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.TreeSet;
+import net.pslice.archebot.utilities.StringUtils;
+
+import java.util.*;
 
 public class Server implements Comparable<Server> {
 
     protected final String name;
     protected final ArrayList<String> motd = new ArrayList<>();
     protected final HashMap<String, String> data = new HashMap<>();
-    protected final HashMap<Character, ModeType> modes = new HashMap<>();
+    protected final TreeMap<Character, ModeType> modes = new TreeMap<>();
     protected final TreeSet<Character> userModes = new TreeSet<>();
     protected final HashMap<Character, Character> prefixes = new HashMap<>();
     protected String description = "";
@@ -20,7 +19,8 @@ public class Server implements Comparable<Server> {
     }
 
     public String details() {
-        return String.format("%s {DESCRIPTION:%s} {MOTD:%d lines}", name, description, motd.size());
+        return String.format("%s {DESCRIPTION:%s} {MOTD:%d lines} {MODES:%s}", name, description, motd.size(),
+                StringUtils.compact(modes.keySet(), "") + ":" + StringUtils.compact(userModes, ""));
     }
 
     public String getDescription() {

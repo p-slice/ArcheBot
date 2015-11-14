@@ -14,6 +14,6 @@ public final class Action extends Output {
     }
 
     public Action(String target, String action, Object... objects) {
-        super("PRIVMSG " + target + " :\001ACTION " + String.format(action, objects) + "\001");
+        super(String.format("PRIVMSG %s :\001ACTION %s\001", target, (objects.length > 0 ? String.format(action, objects) : action)));
     }
 }

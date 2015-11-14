@@ -9,6 +9,6 @@ public final class ErrorMessage extends Output {
     }
 
     public ErrorMessage(String target, String error, Object... objects) {
-        super("NOTICE " + target + " :\002\0034Error\017: " + String.format(error, objects));
+        super(String.format("NOTICE %s :\002\0034Error\017: %s", target, objects.length > 0 ? String.format(error, objects) : error));
     }
 }

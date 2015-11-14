@@ -14,6 +14,6 @@ public final class Message extends Output {
     }
 
     public Message(String target, String message, Object... objects) {
-        super("PRIVMSG " + target + " :" + String.format(message, objects));
+        super(String.format("PRIVMSG %s :%s", target, objects.length > 0 ? String.format(message, objects) : message));
     }
 }

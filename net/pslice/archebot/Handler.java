@@ -111,11 +111,12 @@ public class Handler<B extends ArcheBot> {
      * Runs when any line is received
      *
      * @param bot The bot that received the message
+     * @param source The user who send the line
      * @param command The type of message received
      * @param args The additional arguments that were received
      * @param tail The last argument
      */
-    public void onLine(B bot, String command, String[] args, String tail) {}
+    public void onLine(B bot, User source, String command, String[] args, String tail) {}
 
     /**
      * Runs when a message to a channel is received

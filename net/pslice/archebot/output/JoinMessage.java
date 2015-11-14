@@ -13,10 +13,10 @@ public final class JoinMessage extends Output {
     }
 
     public JoinMessage(String channel) {
-        super("JOIN " + channel);
+        this(channel, "");
     }
 
     public JoinMessage(String channel, String key) {
-        super("JOIN " + channel + " " + key);
+        super(String.format("JOIN %s %s", channel, key));
     }
 }

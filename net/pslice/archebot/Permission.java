@@ -15,7 +15,7 @@ public class Permission implements Comparable<Permission> {
 
     private Permission(String name) {
         this.name = name;
-        permissions.put(name, this);
+        permissions.put(name.toLowerCase(), this);
     }
 
     public TreeSet<Permission> getInclusions() {
@@ -63,15 +63,15 @@ public class Permission implements Comparable<Permission> {
     }
 
     public static boolean exists(String name) {
-        if (name.startsWith("permission."))
+        if (name.toLowerCase().startsWith("permission."))
             name = name.substring(11);
-        return permissions.containsKey(name);
+        return permissions.containsKey(name.toLowerCase());
     }
 
     public static Permission get(String name) {
         if (name.startsWith("permission."))
             name = name.substring(11);
-        return permissions.containsKey(name) ? permissions.get(name) : new Permission(name);
+        return permissions.containsKey(name.toLowerCase()) ? permissions.get(name.toLowerCase()) : new Permission(name);
     }
 
     public static TreeSet<Permission> getAll() {

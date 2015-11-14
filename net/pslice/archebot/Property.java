@@ -16,6 +16,8 @@ public enum Property {
     enableQuoteSplit    ("commands", true),
     /** The prefix used by the bot to recognize commands */
     prefix              ("commands", "+"),
+    /** Removes extra spaces after command arguments */
+    removeTrailingSpaces("commands", false),
     /** The error sent to users when the try to run an unknown command */
     unknownCommandMsg   ("commands", "The command ID '$COMMAND' is not registered."),
     /** All channels that are automatically joined when the bot connects to a server */
@@ -39,14 +41,14 @@ public enum Property {
     /** Lets the bot be set as visible or hidden on the server */
     visible        ("general", false),
     /** Lets &[#] shortcuts be used to format messages */
-    enableFormatting("io", true),
+    enableFormatting    ("io", true),
     /** Lets the bot start shutting down immediately without waiting for a server confirmation */
     immediateDisconnect ("io", false),
     /** The maximum number of characters in a single line */
     lineLength          ("io", 510),
-    /** The time in milliseconds between sending each message */
+    /** The time in milliseconds between sending each message (Requires reconnecting to apply changes) */
     messageDelay        ("io", 1000),
-    /** The maximum number of messages that can be in the output queue before in clears itself */
+    /** The maximum number of messages that can be in the output queue before in clears itself (Requires reconnecting to apply changes) */
     queueSize           ("io", 1000),
     /** The time in milliseconds between thread loops to prevent CPU over-usage (Requires reconnecting to apply changes) */
     sleepTime           ("io", 50),
