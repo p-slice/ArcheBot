@@ -6,11 +6,21 @@ import java.util.TreeSet;
 public class ChannelMap {
 
     private final TreeMap<String, Channel> channels = new TreeMap<>();
+    boolean current = true;
 
     ChannelMap() {}
 
     public Channel getChannel(String name) {
-        return isChannel(name) ? channels.get(name.toLowerCase()) : new Channel(name);
+        return getChannel(name, true);
+    }
+
+    public Channel getChannel(String name, boolean createNew) {
+        if (isChannel(name))
+            return channels.get(name.toLowerCase());
+        else if (createNew)
+            return new Channel(name);
+        else
+            throw new RuntimeException("[ChannelMap:getChannel] Attempted to get unknown channel: " + name);
     }
 
     public TreeSet<String> getChannelNames() {
@@ -23,6 +33,18 @@ public class ChannelMap {
 
     public boolean isChannel(String name) {
         return channels.containsKey(name.toLowerCase());
+    }
+
+    public boolean isChannel(Channel channel) {
+        return channels.containsValue(channel);
+    }
+
+    public boolean isCurrent() {
+        return current;
+    }
+
+    public int size() {
+        return channels.size();
     }
 
     void addChannel(Channel channel) {

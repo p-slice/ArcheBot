@@ -1,5 +1,7 @@
 package net.pslice.archebot;
 
+import net.pslice.archebot.output.ErrorMessage;
+
 public class Handler<B extends ArcheBot> {
 
     /**
@@ -19,7 +21,9 @@ public class Handler<B extends ArcheBot> {
      * @param user The user who sent the action
      * @param action The action that was sent
      */
-    public void onAction(B bot, User user, String action) {}
+    public void onAction(B bot, User user, String action) {
+        onAction(bot, bot.channelMap.getChannel(user.nick), user, action);
+    }
 
     /**
      * Runs when a 3-digit numeric code is received
@@ -40,7 +44,31 @@ public class Handler<B extends ArcheBot> {
      * @param command The command that was sent
      * @param args The additional arguments that were received
      */
-    public void onCommand(B bot, Channel channel, User user, Command<B> command, String[] args) {}
+    public void onCommand(B bot, Channel channel, User user, Command<B> command, String[] args) {
+        if (!command.enabled && !user.hasPermission(Permission.OPERATOR))
+            bot.send(new ErrorMessage(user, "That command is not currently enabled."));
+        else if (command.requireId && !user.isIdentified())
+            bot.send(new ErrorMessage(user, "You must be identified with NickServ to run that command."));
+        else if (user.hasPermission(command.getPermission()) || user.hasPermission(Permission.OPERATOR))
+            if (args[0].equals(bot.nick))
+                command.execute(bot, user, args);
+            else
+                command.execute(bot, bot.channelMap.getChannel(args[0]), user, args);
+        else
+            bot.send(new ErrorMessage(user, "You do not have permission to do that. (Required permission: %s)", command.getPermission()));
+    }
+
+    /**
+     * Runs when a command is received
+     *
+     * @param bot The bot that received the message
+     * @param user The user who sent the command
+     * @param command The command that was sent
+     * @param args The additional arguments that were received
+     */
+    public void onCommand(B bot, User user, Command<B> command, String[] args) {
+        onCommand(bot, bot.channelMap.getChannel(user.nick), user, command, args);
+    }
 
     /**
      * Runs when a connection is successfully made
@@ -68,7 +96,9 @@ public class Handler<B extends ArcheBot> {
      * @param command The CTCP command that was sent
      * @param args The additional arguments that were received
      */
-    public void onCTCPCommand(B bot, User user, String command, String args) {}
+    public void onCTCPCommand(B bot, User user, String command, String args) {
+        onCTCPCommand(bot, bot.channelMap.getChannel(user.nick), user, command, args);
+    }
 
     /**
      * Runs when the bot becomes disconnected from a server
@@ -135,7 +165,9 @@ public class Handler<B extends ArcheBot> {
      * @param user The user who sent the message
      * @param message The message that was sent
      */
-    public void onMessage(B bot, User user, String message) {}
+    public void onMessage(B bot, User user, String message) {
+        onMessage(bot, bot.channelMap.getChannel(user.nick), user, message);
+    }
 
     /**
      * Runs when a channel mode message is received
@@ -205,7 +237,9 @@ public class Handler<B extends ArcheBot> {
      * @param user The user who sent the notice
      * @param notice The notice that was sent
      */
-    public void onNotice(B bot, User user, String notice) {}
+    public void onNotice(B bot, User user, String notice) {
+        onNotice(bot, bot.channelMap.getChannel(user.nick), user, notice);
+    }
 
     /**
      * Runs when a part message is received
@@ -222,7 +256,7 @@ public class Handler<B extends ArcheBot> {
      *
      * @param bot The bot that received the message
      */
-    public void onPing(B bot) {}
+    public void onPing(B bot, String message) {}
 
     /**
      * Runs when a pong is received

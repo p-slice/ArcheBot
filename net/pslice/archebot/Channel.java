@@ -1,7 +1,5 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.utilities.StringUtils;
-
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -22,20 +20,8 @@ public class Channel implements Comparable<Channel> {
         return users.containsKey(user);
     }
 
-    public String details() {
-        return String.format("%s {MODES:%s} {USERS:%d} {TOPIC:%s}", name, StringUtils.compact(modes.keySet(), ""), users.size(), topic);
-    }
-
-    public String getValue(char mode) {
-        return modes.containsKey(mode) ? modes.get(mode) : null;
-    }
-
-    public HashSet<String> getValues(char mode) {
-        return listModes.containsKey(mode) ? listModes.get(mode) : null;
-    }
-
-    public boolean isValue(char mode, String value) {
-        return listModes.containsKey(mode) && listModes.get(mode).contains(value);
+    public HashSet<Character> getListModes() {
+        return new HashSet<>(listModes.keySet());
     }
 
     public HashSet<Character> getModes() {
@@ -74,12 +60,24 @@ public class Channel implements Comparable<Channel> {
         return modeUsers;
     }
 
+    public String getValue(char mode) {
+        return modes.containsKey(mode) ? modes.get(mode) : null;
+    }
+
+    public HashSet<String> getValues(char mode) {
+        return listModes.containsKey(mode) ? listModes.get(mode) : null;
+    }
+
     public boolean hasMode(char mode) {
         return modes.containsKey(mode);
     }
 
     public boolean hasMode(User user, char mode) {
         return users.containsKey(user) && users.get(user).contains(mode);
+    }
+
+    public boolean isValue(char mode, String value) {
+        return listModes.containsKey(mode) && listModes.get(mode).contains(value);
     }
 
     public int totalUsers() {

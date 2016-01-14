@@ -57,9 +57,9 @@ public class StringUtils {
         List<String> strings = new ArrayList<>();
         boolean b = false;
         String current = "";
-        for (char c : string.replace("\\" + split, "\000").toCharArray()) {
+        for (char c : string.replace("\\" + split, "\0").toCharArray()) {
             if (!b && c == ' ') {
-                strings.add(current.replace("\000", "" + split));
+                strings.add(current.replace("\0", "" + split));
                 current = "";
             } else if (c == split)
                 b = !b;
@@ -67,7 +67,7 @@ public class StringUtils {
                 current += c;
         }
         if (!current.isEmpty())
-            strings.add(current.replace("\000", "" + split));
+            strings.add(current.replace("\0", "" + split));
         return strings.toArray(new String[strings.size()]);
     }
 
@@ -86,8 +86,7 @@ public class StringUtils {
                     current += c;
                 i++;
             } else if (c == last) {
-                i--;
-                if (i != 0)
+                if (--i != 0)
                     current += c;
             } else
                 current += c;

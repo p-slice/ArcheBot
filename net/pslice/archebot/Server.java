@@ -1,7 +1,5 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.utilities.StringUtils;
-
 import java.util.*;
 
 public class Server implements Comparable<Server> {
@@ -12,23 +10,22 @@ public class Server implements Comparable<Server> {
     protected final TreeMap<Character, ModeType> modes = new TreeMap<>();
     protected final TreeSet<Character> userModes = new TreeSet<>();
     protected final HashMap<Character, Character> prefixes = new HashMap<>();
-    protected String description = "";
+    protected String description = "", version = "";
 
     protected Server(String name) {
         this.name = name;
     }
 
-    public String details() {
-        return String.format("%s {DESCRIPTION:%s} {MOTD:%d lines} {MODES:%s}", name, description, motd.size(),
-                StringUtils.compact(modes.keySet(), "") + ":" + StringUtils.compact(userModes, ""));
+    public String getData(String type) {
+        return data.containsKey(type) ? data.get(type) : null;
+    }
+
+    public HashSet<String> getDataTypes() {
+        return new HashSet<>(data.keySet());
     }
 
     public String getDescription() {
         return description;
-    }
-
-    public String getData(String type) {
-        return data.containsKey(type) ? data.get(type) : null;
     }
 
     public char getMode(char prefix) {
@@ -61,6 +58,10 @@ public class Server implements Comparable<Server> {
 
     public TreeSet<Character> getUserModes() {
         return new TreeSet<>(userModes);
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     public boolean supportsPrefix(char prefix) {

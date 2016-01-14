@@ -1,7 +1,5 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.utilities.StringUtils;
-
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -9,7 +7,8 @@ public class User implements Comparable<User> {
 
     protected final TreeMap<Permission, Boolean> permissions = new TreeMap<>();
     protected final TreeSet<Character> modes = new TreeSet<>();
-    protected String nick, login = "", hostmask = "", realname = "", nickservID;
+    protected boolean known = false;
+    protected String nick, login = "", hostmask = "", realname = "", nickservId;
     protected Server server;
 
     protected User() {
@@ -21,9 +20,9 @@ public class User implements Comparable<User> {
         permissions.put(Permission.DEFAULT, false);
     }
 
-    public String details() {
-        return String.format("%s {LOGIN:%s} {HOSTMASK:%s} {REALNAME:%s} {SERVER:%s} {NICKSERVID:%s} {PERMISSIONS:%s} {MODES:%s}",
-                nick, login, hostmask, realname, server, nickservID, StringUtils.compact(permissions.keySet()), StringUtils.compact(modes, ""));
+    public void clearPermissions() {
+        permissions.clear();
+        permissions.put(Permission.DEFAULT, false);
     }
 
     public String getIdentity() {
@@ -46,8 +45,8 @@ public class User implements Comparable<User> {
         return nick;
     }
 
-    public String getNickservID() {
-        return nickservID;
+    public String getNickservId() {
+        return nickservId;
     }
 
     public TreeSet<Permission> getPermissions() {
@@ -62,18 +61,30 @@ public class User implements Comparable<User> {
         return server;
     }
 
+    public void givePermission(String permission) {
+        givePermission(permission, true);
+    }
+
+    public void givePermission(String permission, boolean savable) {
+        givePermission(Permission.get(permission), savable);
+    }
+
     public void givePermission(Permission permission) {
         givePermission(permission, true);
     }
 
     public void givePermission(Permission permission, boolean savable) {
         permissions.put(permission, savable);
+        for (Permission inclusion : permission.getInclusions())
+            if (!hasPermission(inclusion))
+                givePermission(inclusion, savable);
+    }
+
+    public boolean hasPermission(String permission) {
+        return hasPermission(Permission.get(permission));
     }
 
     public boolean hasPermission(Permission permission) {
-        for (Permission p : permissions.keySet())
-            if (p.includes(permission))
-                return true;
         return permissions.containsKey(permission);
     }
 
@@ -82,20 +93,30 @@ public class User implements Comparable<User> {
     }
 
     public boolean isIdentified() {
-        return nickservID != null;
+        return nickservId != null;
+    }
+
+    public boolean isKnown() {
+        return known;
+    }
+
+    public boolean isSavable(String permission) {
+        return isSavable(Permission.get(permission));
     }
 
     public boolean isSavable(Permission permission) {
         return permissions.containsKey(permission) && permissions.get(permission);
     }
 
-    public void removePermission(Permission permission) {
-        permissions.remove(permission);
+    public void removePermission(String permission) {
+        removePermission(Permission.get(permission));
     }
 
-    public void resetPermissions() {
-        permissions.clear();
-        permissions.put(Permission.DEFAULT, false);
+    public void removePermission(Permission permission) {
+        permissions.remove(permission);
+        for (Permission inclusion : permission.getInclusions())
+            if (hasPermission(inclusion))
+                removePermission(inclusion);
     }
 
     @SuppressWarnings("NullableProblems")

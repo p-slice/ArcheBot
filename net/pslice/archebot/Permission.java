@@ -38,12 +38,12 @@ public class Permission implements Comparable<Permission> {
             include(get(p));
     }
 
-    public boolean includes(Permission permission) {
-        return inclusions.contains(permission);
-    }
-
     public boolean includes(String permission) {
         return includes(get(permission));
+    }
+
+    public boolean includes(Permission permission) {
+        return inclusions.contains(permission);
     }
 
     @SuppressWarnings("NullableProblems")
@@ -63,14 +63,11 @@ public class Permission implements Comparable<Permission> {
     }
 
     public static boolean exists(String name) {
-        if (name.toLowerCase().startsWith("permission."))
-            name = name.substring(11);
-        return permissions.containsKey(name.toLowerCase());
+        return permissions.containsKey(name.replaceAll("^permission\\.", "").toLowerCase());
     }
 
     public static Permission get(String name) {
-        if (name.startsWith("permission."))
-            name = name.substring(11);
+        name = name.replaceAll("^permission\\.", "");
         return permissions.containsKey(name.toLowerCase()) ? permissions.get(name.toLowerCase()) : new Permission(name);
     }
 

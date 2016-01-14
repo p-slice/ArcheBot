@@ -1,7 +1,5 @@
 package net.pslice.archebot;
 
-import net.pslice.archebot.utilities.StringUtils;
-
 public abstract class Command<B extends ArcheBot> implements Comparable<Command<B>> {
 
     protected final String name;
@@ -15,13 +13,11 @@ public abstract class Command<B extends ArcheBot> implements Comparable<Command<
         this.ids = ids;
     }
 
-    public String details() {
-        return String.format("%s {PERMISSION:%s} {PARAMETERS:%s} {DESCRIPTION:%s} {ENABLED:%b} {REQUIREID:%s}%s",
-                name, permission, parameters, description, enabled, requireId,
-                ids.length > 0 ? " {IDS:" + StringUtils.compact(ids, ",") + "}" : "");
-    }
-
     public abstract void execute(B bot, Channel channel, User sender, String[] args);
+
+    public void execute(B bot, User sender, String[] args) {
+        execute(bot, bot.channelMap.getChannel(sender.nick), sender, args);
+    }
 
     public String getDescription() {
         return description;
